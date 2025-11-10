@@ -11,6 +11,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import java.io.Closeable
 
 /**
  * Configuration for retrying failed HTTP requests.
@@ -41,7 +42,7 @@ class JulesHttpClient(
     private val timeout: Long = 30000,
     private val retryConfig: RetryConfig = RetryConfig(),
     private val httpClient: HttpClient? = null
-) {
+) : Closeable {
     val client = httpClient ?: HttpClient(CIO) {
         engine {
             requestTimeout = timeout
@@ -84,7 +85,7 @@ class JulesHttpClient(
             }
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("GET request to $endpoint failed with status ${response.status.value}: ${response.status.description}")
+            throw JulesApiException(response.status.value, response.body())
         }
         return response.body()
     }
@@ -97,29 +98,14 @@ class JulesHttpClient(
      * @param body The request body.
      * @return The response body, deserialized to the expected type.
      */
-    suspend inline fun <reified T> postAndReceive(endpoint: String, body: Any): T {
+    suspend inline fun <reified T> post(endpoint: String, body: Any): T {
         val response = client.post(baseUrl + endpoint) {
             setBody(body)
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("POST request to $endpoint failed with status ${response.status.value}: ${response.status.description}")
+            throw JulesApiException(response.status.value, response.body())
         }
         return response.body()
-    }
-
-    /**
-     * Makes a POST request with a body and does not expect a response.
-     *
-     * @param endpoint The API endpoint to call.
-     * @param body The request body.
-     */
-    suspend fun postWithBody(endpoint: String, body: Any) {
-        val response = client.post(baseUrl + endpoint) {
-            setBody(body)
-        }
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("POST request to $endpoint failed with status ${response.status.value}: ${response.status.description}")
-        }
     }
 
     /**
@@ -130,7 +116,11 @@ class JulesHttpClient(
     suspend fun post(endpoint: String) {
         val response = client.post(baseUrl + endpoint)
         if (!response.status.isSuccess()) {
-            throw RuntimeException("POST request to $endpoint failed with status ${response.status.value}: ${response.status.description}")
+            throw JulesApiException(response.status.value, response.body())
         }
+    }
+
+    override fun close() {
+        client.close()
     }
 }

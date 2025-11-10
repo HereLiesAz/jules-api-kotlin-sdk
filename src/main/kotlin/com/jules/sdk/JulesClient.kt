@@ -1,6 +1,7 @@
 package com.jules.sdk
 
 import io.ktor.client.*
+import java.io.Closeable
 
 /**
  * A Kotlin client for the Jules AI API.
@@ -12,7 +13,7 @@ import io.ktor.client.*
  */
 class JulesClient(
     private val httpClient: JulesHttpClient
-) {
+) : Closeable {
     /**
      * Secondary constructor for creating a `JulesClient` with an API key.
      *
@@ -61,7 +62,7 @@ class JulesClient(
      * @return The created `Session` object.
      */
     suspend fun createSession(request: CreateSessionRequest): Session {
-        return httpClient.postAndReceive<Session>("/sessions", request)
+        return httpClient.post<Session>("/sessions", request)
     }
 
     /**
@@ -132,6 +133,10 @@ class JulesClient(
      */
     suspend fun sendMessage(sessionId: String, prompt: String): MessageResponse {
         require(prompt.isNotBlank()) { "Prompt must be a non-empty string" }
-        return httpClient.postAndReceive<MessageResponse>("/sessions/$sessionId:sendMessage", mapOf("prompt" to prompt))
+        return httpClient.post<MessageResponse>("/sessions/$sessionId:sendMessage", mapOf("prompt" to prompt))
+    }
+
+    override fun close() {
+        httpClient.close()
     }
 }
