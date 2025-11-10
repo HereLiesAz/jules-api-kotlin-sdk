@@ -1,41 +1,27 @@
-# Dependencies
-node_modules/
-package-lock.json
-yarn.lock
-bun.lock
+# Gradle
+.gradle
+build/
+!build/libs/
 
-# Build output
-dist/
-*.tsbuildinfo
-
-# Coverage
-coverage/
-*.lcov
-
-# IDE & Editor
-.vscode/
+# IDE files
 .idea/
-*.swp
-*.swo
-*~
-.DS_Store
-.env
-.env.local
-.env.*.local
+*.iml
+*.iws
+.project
+.classpath
+.settings
 
-# Testing
-.vitest/
+# Local properties
+local.properties
 
-# OS
+# Log files
+*.log
+
+# Windows thumbnail cache
 Thumbs.db
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Temporary files
-*.tmp
-tmp/
-jules_api_docs
+# Other
+*.bak
+*~
+*.swp
+*.orig
