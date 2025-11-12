@@ -44,10 +44,12 @@ class ChatFragment : Fragment() {
 
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.messages.collect { messages ->
-                messageAdapter.submitList(messages)
-                if (messages.isNotEmpty()) {
-                    binding.messagesRecyclerview.scrollToPosition(messages.size - 1)
+            viewModel.uiState.collect { uiState ->
+                if (uiState is UiState.Chat) {
+                    messageAdapter.submitList(uiState.messages)
+                    if (uiState.messages.isNotEmpty()) {
+                        binding.messagesRecyclerview.scrollToPosition(uiState.messages.size - 1)
+                    }
                 }
             }
         }
