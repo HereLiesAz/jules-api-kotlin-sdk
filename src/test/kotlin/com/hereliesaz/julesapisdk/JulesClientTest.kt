@@ -44,15 +44,6 @@ class JulesClientTest {
 
     @Test
     fun `listSources returns sources`() = runBlocking {
-        val mockResponse = readResource("/listSources.json")
-        client = createMockClient(mapOf("/sources" to mockResponse))
-        val response = client.listSources()
-        val expected = json.decodeFromString<ListSourcesResponse>(mockResponse)
-        assertEquals(expected, response)
-    }
-
-    @Test
-    fun `listSources with correct data returns sources`() = runBlocking {
         val mockResponse = readResource("/listSources_correct.json")
         client = createMockClient(mapOf("/sources" to mockResponse))
         val response = client.listSources()

@@ -164,11 +164,11 @@ data class GitPatch(
 )
 
 /**
-* Represents a change set artifact.
-*
-* @property source The source the change set applies to.
-* @property gitPatch The Git patch details.
-*/
+ * Represents a change set artifact.
+ *
+ * @property source The source the change set applies to.
+ * @property gitPatch The Git patch details.
+ */
 @Serializable
 data class ChangeSet(
     val source: String,
@@ -422,6 +422,29 @@ data class GitHubRepo(
  * @property type The type of the source.
  * @property githubRepo The GitHub repo details, if this is a GitHub source.
  */
+/**
+ * Represents a source for the Jules AI, as returned by the `listSources` endpoint.
+ * This may be a partial representation of the full Source object.
+ *
+ * @property name The name of the source.
+ * @property id The unique ID of the source.
+ * @property createTime The time the source was created.
+ * @property updateTime The time the source was last updated.
+ * @property url The URL of the source.
+ * @property type The type of the source.
+ * @property githubRepo The GitHub repo details, if this is a GitHub source.
+ */
+@Serializable
+data class SourceInfo(
+    val name: String,
+    val id: String,
+    val createTime: String? = null,
+    val updateTime: String? = null,
+    val url: String? = null,
+    val type: String? = null,
+    val githubRepo: GitHubRepo? = null
+)
+
 @Serializable
 data class Source(
     val name: String,
@@ -441,7 +464,7 @@ data class Source(
  */
 @Serializable
 data class ListSourcesResponse(
-    val sources: List<Source>? = null,
+    val sources: List<SourceInfo>? = null,
     val nextPageToken: String? = null
 )
 
@@ -464,7 +487,7 @@ data class ErrorDetail(
 /**
  * A Google API error.
  *
-* @property code The HTTP status code.
+ * @property code The HTTP status code.
  * @property message The error message.
  * @property status The error status.
  * @property details The details of the error.

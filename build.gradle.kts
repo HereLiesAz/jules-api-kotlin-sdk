@@ -13,13 +13,8 @@ android {
         minSdk = 26
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        jvmToolchain(17)
     }
 
     publishing {
@@ -28,12 +23,13 @@ android {
 }
 
 group = "com.hereliesaz.julesapisdk"
-version = "1.0.1"
+version = "1.0.2"
 
 
 dependencies {
     // Ktor client
     implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)

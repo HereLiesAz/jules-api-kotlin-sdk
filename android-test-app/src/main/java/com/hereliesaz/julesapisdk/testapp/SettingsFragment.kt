@@ -12,7 +12,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
-import com.hereliesaz.julesapisdk.Source
+import com.hereliesaz.julesapisdk.SourceInfo
 import com.hereliesaz.julesapisdk.testapp.databinding.FragmentSettingsBinding
 
 class SettingsFragment : Fragment() {

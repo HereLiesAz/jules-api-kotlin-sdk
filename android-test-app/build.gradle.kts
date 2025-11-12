@@ -16,18 +16,12 @@ android {
         buildConfigField("String", "API_KEY", "\"YOUR_API_KEY\"")
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         viewBinding = true
         buildConfig = true
+    }
+    kotlin {
+        jvmToolchain(17)
     }
 }
 
