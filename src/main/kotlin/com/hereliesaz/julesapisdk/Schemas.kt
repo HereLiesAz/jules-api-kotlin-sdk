@@ -456,3 +456,19 @@ data class GoogleApiError(
 data class MessageResponse(
     val message: String
 )
+
+/**
+ * A request to send a message.
+ *
+ * @property prompt The prompt to send.
+ */
+@Serializable
+data class SendMessageRequest(
+    val prompt: String
+)
+
+/**
+ * A request to approve a plan.
+ */
+@Serializable
+class ApprovePlanRequest

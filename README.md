@@ -16,12 +16,12 @@ Add the following dependency to your `build.gradle.kts` or `build.gradle` file:
 
 **Gradle (Kotlin DSL)**
 ```kotlin
-implementation("com.jules:jules-sdk:1.0.1")
+implementation("com.hereliesaz.julesapisdk:kotlin-sdk:1.0.1")
 ```
 
 **Gradle (Groovy DSL)**
 ```groovy
-implementation 'com.jules:jules-sdk:1.0.1'
+implementation 'com.hereliesaz.julesapisdk:kotlin-sdk:1.0.1'
 ```
 
 ## Quick Start
@@ -29,10 +29,10 @@ implementation 'com.jules:jules-sdk:1.0.1'
 The SDK is designed to be used with Kotlin Coroutines.
 
 ```kotlin
-import com.jules.sdk.JulesClient
-import com.jules.sdk.CreateSessionRequest
-import com.jules.sdk.SourceContext
-import com.jules.sdk.GithubRepoContext
+import com.hereliesaz.julesapisdk.JulesClient
+import com.hereliesaz.julesapisdk.CreateSessionRequest
+import com.hereliesaz.julesapisdk.SourceContext
+import com.hereliesaz.julesapisdk.GithubRepoContext
 import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
@@ -81,14 +81,16 @@ All methods are `suspend` functions and should be called from a coroutine.
 ```kotlin
 val client = JulesClient(
     apiKey: String,
-    baseUrl: String = "https://jules.googleapis.com/v1alpha",
+    baseUrl: String = "https://jules.googleapis.com",
+    apiVersion: String = "v1alpha",
     retryConfig: RetryConfig = RetryConfig()
 )
 ```
 
 **Parameters:**
 - `apiKey`: Your Jules API key (required).
-- `baseUrl`: The base URL for the Jules API (optional, defaults to `https://jules.googleapis.com/v1alpha`).
+- `baseUrl`: The base URL for the Jules API (optional, defaults to `https://jules.googleapis.com`).
+- `apiVersion`: The version of the Jules API to use (optional, defaults to `v1alpha`).
 - `retryConfig`: Configuration for request retries (optional).
   - `maxRetries`: Maximum number of retry attempts (default: 0, retries are disabled by default).
   - `initialDelayMs`: The initial delay in milliseconds before the first retry (default: 1000).
@@ -97,7 +99,8 @@ val client = JulesClient(
 ```kotlin
 val client = JulesClient(
     apiKey = System.getenv("JULES_API_KEY")!!,
-    baseUrl = "https://jules.googleapis.com/v1alpha",
+    baseUrl = "https://jules.googleapis.com",
+    apiVersion = "v1alpha",
     retryConfig = RetryConfig(
         maxRetries = 5,
         initialDelayMs = 500
@@ -162,14 +165,18 @@ val client = JulesClient(
 
 ### Error Recovery
 
-All API methods can throw exceptions (e.g., `ClientRequestException` for 4xx/5xx responses). Always wrap API calls in `try-catch` blocks.
+All API methods can throw exceptions (e.g., `JulesApiException` for 4xx/5xx responses). Always wrap API calls in `try-catch` blocks.
 
 ```kotlin
+import com.hereliesaz.julesapisdk.JulesApiException
+
 try {
     val session = client.createSession(request)
     println("Success: ${session.id}")
-} catch (e: Exception) {
+} catch (e: JulesApiException) {
     println("Error: ${e.message}")
+    println("HTTP Status: ${e.statusCode}")
+    println("Response Body: ${e.responseBody}")
 }
 ```
 

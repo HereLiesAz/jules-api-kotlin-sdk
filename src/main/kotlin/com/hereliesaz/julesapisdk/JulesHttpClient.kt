@@ -32,18 +32,21 @@ data class RetryConfig(
  *
  * @property apiKey The API key for authenticating with the Jules API.
  * @property baseUrl The base URL of the Jules API.
+ * @property apiVersion The version of the Jules API.
  * @property timeout The timeout for HTTP requests in milliseconds.
  * @property retryConfig The configuration for retrying failed requests.
  * @property httpClient An optional pre-configured Ktor HttpClient.
  */
 class JulesHttpClient(
     private val apiKey: String,
-    val baseUrl: String = "https://jules.googleapis.com/v1alpha",
+    private val baseUrl: String,
+    private val apiVersion: String,
     private val timeout: Long = 30000,
     private val retryConfig: RetryConfig = RetryConfig(),
     private val httpClient: HttpClient? = null
 ) : Closeable {
     val client: HttpClient
+    private val ownClient: Boolean = httpClient == null
 
     init {
         val baseClient = httpClient ?: HttpClient(CIO) {
@@ -61,7 +64,7 @@ class JulesHttpClient(
                 level = LogLevel.NONE
             }
             install(HttpRequestRetry) {
-                retryOnServerErrors(retryConfig.maxRetries)
+                maxRetries = retryConfig.maxRetries
                 exponentialDelay(retryConfig.initialDelayMs.toDouble())
                 retryIf { _, response ->
                     response.status.value.let { it in setOf(408, 429, 500, 502, 503, 504) }
@@ -80,6 +83,10 @@ class JulesHttpClient(
         }
     }
 
+    fun buildUrl(endpoint: String): String {
+        return "${baseUrl.removeSuffix("/")}/${apiVersion.removeSuffix("/")}/${endpoint.removePrefix("/")}"
+    }
+
     /**
      * Makes a GET request to the specified endpoint.
      *
@@ -89,7 +96,7 @@ class JulesHttpClient(
      * @return The response body, deserialized to the expected type.
      */
     suspend inline fun <reified T> get(endpoint: String, params: Map<String, String> = emptyMap()): T {
-        val response = client.get(baseUrl + endpoint) {
+        val response = client.get(buildUrl(endpoint)) {
             params.forEach { (key, value) ->
                 parameter(key, value)
             }
@@ -109,7 +116,7 @@ class JulesHttpClient(
      * @return The response body, deserialized to the expected type.
      */
     suspend inline fun <reified T> post(endpoint: String, body: Any? = null): T {
-        val response = client.post(baseUrl + endpoint) {
+        val response = client.post(buildUrl(endpoint)) {
             if (body != null) {
                 setBody(body)
             }
@@ -121,6 +128,8 @@ class JulesHttpClient(
     }
 
     override fun close() {
-        client.close()
+        if (ownClient) {
+            client.close()
+        }
     }
 }
