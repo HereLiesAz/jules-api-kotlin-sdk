@@ -1,4 +1,4 @@
-package com.jules.sdk
+package com.hereliesaz.julesapisdk
 
 /**
  * A custom exception for reporting errors from the Jules API.

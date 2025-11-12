@@ -1,4 +1,4 @@
-package com.jules.sdk
+package com.hereliesaz.julesapisdk
 
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
