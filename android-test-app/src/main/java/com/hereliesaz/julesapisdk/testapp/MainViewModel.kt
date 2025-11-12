@@ -12,73 +12,95 @@ import com.hereliesaz.julesapisdk.SourceContext
 import kotlinx.coroutines.launch
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainViewModel : ViewModel() {
 
-    // For Chat
+    // For Chat tab
     private val _messages = MutableLiveData<List<Message>>(emptyList())
     val messages: LiveData<List<Message>> = _messages
 
-    // For Settings
+    // For Settings tab
     private val _sources = MutableLiveData<List<Source>>()
     val sources: LiveData<List<Source>> = _sources
-    private val _settingsError = MutableLiveData<String?>()
-    val settingsError: LiveData<String?> = _settingsError
+
+    // For Logcat tab - SINGLE SOURCE OF TRUTH FOR ALL LOGS/ERRORS
+    private val _diagnosticLogs = MutableLiveData<List<String>>(emptyList())
+    val diagnosticLogs: LiveData<List<String>> = _diagnosticLogs
 
     private var julesClient: JulesClient? = null
     private var julesSession: JulesSession? = null
 
-    // Called from SettingsFragment when API key is available
+    fun addLog(log: String) { // Changed to public
+        val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())
+        val currentLogs = _diagnosticLogs.value.orEmpty().toMutableList()
+        currentLogs.add(0, "$timestamp: $log") // Add to the top for most recent first
+        _diagnosticLogs.postValue(currentLogs)
+    }
+
     fun initializeClient(apiKey: String) {
         if (apiKey.isNotBlank()) {
             julesClient = JulesClient(apiKey)
+            addLog("JulesClient initialized.")
+        } else {
+            addLog("Attempted to initialize client with blank API key.")
         }
     }
 
-    // Called from SettingsFragment when "Load Sources" is clicked
     fun loadSources() {
         if (julesClient == null) {
-            _settingsError.postValue("API Key is not set.")
+            addLog("Error: API Key is not set. Cannot load sources.")
             return
         }
+        addLog("Loading sources...")
         viewModelScope.launch {
             try {
                 val sourceList = julesClient?.listSources()?.sources
                 if (sourceList.isNullOrEmpty()) {
-                    _settingsError.postValue("No sources found for this API key.")
+                    addLog("No sources found for this API key.")
+                    _sources.postValue(emptyList())
                 } else {
-                    _sources.postValue(sourceList!!)
+                    _sources.postValue(sourceList)
+                    addLog("Successfully loaded ${sourceList.size} sources.")
                 }
             } catch (e: Exception) {
-                _settingsError.postValue("Error loading sources: ${e.message}")
+                val sw = StringWriter()
+                e.printStackTrace(PrintWriter(sw))
+                addLog("Error loading sources:\n$sw")
             }
         }
     }
 
-    // Called from SettingsFragment when "Save" is clicked
     fun createSession(source: Source) {
         if (julesClient == null) {
-            addMessage(Message("API Key not set. Please configure in Settings.", MessageType.ERROR))
+            addLog("Error: API Key not set. Cannot create session.")
             return
         }
+        addLog("Creating session with source: ${source.name}")
         viewModelScope.launch {
             try {
                 _messages.postValue(emptyList()) // Clear chat on new session
                 julesSession = julesClient?.createSession(CreateSessionRequest("Test Application", SourceContext(source.name)))
-                addMessage(Message("Session created with source: ${source.name}", MessageType.BOT))
+                val successMsg = "Session created with source: ${source.url}"
+                addMessage(Message(successMsg, MessageType.BOT))
+                addLog(successMsg)
             } catch (e: Exception) {
                 val sw = StringWriter()
                 e.printStackTrace(PrintWriter(sw))
-                val stackTraceString = sw.toString()
-                addMessage(Message("Error creating session:\n$stackTraceString", MessageType.ERROR))
+                val errorMsg = "Error creating session:\n$sw"
+                addMessage(Message(errorMsg, MessageType.ERROR)) // Also show error in chat
+                addLog(errorMsg)
             }
         }
     }
 
-
     fun sendMessage(text: String) {
         if (julesSession == null) {
-            addMessage(Message("Session not created. Please configure API Key and Source in Settings.", MessageType.ERROR))
+            val errorMsg = "Session not created. Please configure API Key and Source in Settings."
+            addMessage(Message(errorMsg, MessageType.ERROR))
+            addLog(errorMsg)
             return
         }
 
@@ -91,7 +113,9 @@ class MainViewModel : ViewModel() {
                     addMessage(Message(it.message, MessageType.BOT))
                 }
             } catch (e: Exception) {
-                addMessage(Message("Error sending message: ${e.message}", MessageType.ERROR))
+                val errorMsg = "Error sending message: ${e.message}"
+                addLog(errorMsg)
+                addMessage(Message(errorMsg, MessageType.ERROR))
             }
         }
     }
@@ -100,9 +124,5 @@ class MainViewModel : ViewModel() {
         val newMessages = _messages.value.orEmpty().toMutableList()
         newMessages.add(message)
         _messages.postValue(newMessages)
-    }
-
-    fun clearSettingsError() {
-        _settingsError.value = null
     }
 }

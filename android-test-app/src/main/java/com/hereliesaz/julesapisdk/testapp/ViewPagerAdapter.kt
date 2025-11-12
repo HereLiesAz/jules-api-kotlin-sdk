@@ -6,12 +6,13 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 
 class ViewPagerAdapter(fragmentActivity: FragmentActivity) : FragmentStateAdapter(fragmentActivity) {
 
-    override fun getItemCount(): Int = 2
+    override fun getItemCount(): Int = 3 // We now have 3 tabs
 
     override fun createFragment(position: Int): Fragment {
         return when (position) {
             0 -> ChatFragment()
             1 -> SettingsFragment()
+            2 -> LogcatFragment() // The new Logcat tab
             else -> throw IllegalStateException("Invalid position: $position")
         }
     }

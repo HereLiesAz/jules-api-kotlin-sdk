@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -57,12 +56,10 @@ class SettingsFragment : Fragment() {
 
         binding.loadSourcesButton.setOnClickListener {
             val apiKey = binding.apiKeyEdittext.text.toString()
-            if (apiKey.isNotBlank()) {
-                viewModel.initializeClient(apiKey)
-                viewModel.loadSources()
-            } else {
-                Toast.makeText(requireContext(), "Please enter an API key first.", Toast.LENGTH_SHORT).show()
-            }
+            viewModel.initializeClient(apiKey)
+            viewModel.loadSources()
+            // Switch to logcat tab to see the outcome
+            (requireActivity() as? MainActivity)?.binding?.viewPager?.currentItem = 2
         }
 
         binding.saveApiKeyButton.setOnClickListener {
@@ -71,14 +68,15 @@ class SettingsFragment : Fragment() {
                 val selectedSource = sourcesList[selectedPosition]
                 val apiKey = binding.apiKeyEdittext.text.toString()
 
-                viewModel.createSession(selectedSource) // Create session with the selected source
-                saveSettings(apiKey, selectedSource.name) // Save API key and the source NAME
+                viewModel.addLog("Settings saved. Requesting session creation...")
+                viewModel.createSession(selectedSource)
+                saveSettings(apiKey, selectedSource.name)
 
-                Toast.makeText(requireContext(), "Settings saved. Session being created in Chat tab.", Toast.LENGTH_LONG).show()
-                // Switch to chat tab to see the result
-                (requireActivity() as? MainActivity)?.binding?.viewPager?.currentItem = 0
+                // Switch to logcat tab to see the session creation status
+                (requireActivity() as? MainActivity)?.binding?.viewPager?.currentItem = 2
             } else {
-                Toast.makeText(requireContext(), "Please load and select a source.", Toast.LENGTH_SHORT).show()
+                viewModel.addLog("Save failed: Please load and select a source first.")
+                (requireActivity() as? MainActivity)?.binding?.viewPager?.currentItem = 2 // Switch to logcat tab to see the error
             }
         }
     }
@@ -91,7 +89,6 @@ class SettingsFragment : Fragment() {
             sourceAdapter.addAll(sourceDisplayNames)
             sourceAdapter.notifyDataSetChanged()
 
-            // Restore previously selected source
             val savedSourceName = getEncryptedSharedPreferences().getString("selected_source_name", null)
             if (savedSourceName != null) {
                 val position = sourcesList.indexOfFirst { it.name == savedSourceName }
@@ -100,19 +97,12 @@ class SettingsFragment : Fragment() {
                 }
             }
         }
-
-        viewModel.settingsError.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                Toast.makeText(requireContext(), "Error: $it", Toast.LENGTH_LONG).show()
-                viewModel.clearSettingsError()
-            }
-        }
     }
 
     private fun getEncryptedSharedPreferences(): SharedPreferences {
         val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
         return EncryptedSharedPreferences.create(
-            "JulesTestApp-Settings", // Use a unique name
+            "JulesTestApp-Settings",
             masterKeyAlias,
             requireContext(),
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
@@ -133,7 +123,7 @@ class SettingsFragment : Fragment() {
         if (!apiKey.isNullOrBlank()) {
             binding.apiKeyEdittext.setText(apiKey)
             viewModel.initializeClient(apiKey)
-            viewModel.loadSources() // Auto-load sources if API key exists
+            viewModel.loadSources()
         }
     }
 

@@ -28,29 +28,25 @@ class LogcatFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerView()
-        // setupObservers() // Commented out to fix build error. The 'logcatMessages' LiveData does not exist in the ViewModel.
+        setupObservers()
     }
 
     private fun setupRecyclerView() {
-        logcatAdapter = LogcatAdapter(mutableListOf())
+        logcatAdapter = LogcatAdapter()
         binding.logcatRecyclerview.apply {
             adapter = logcatAdapter
             layoutManager = LinearLayoutManager(requireContext())
         }
     }
 
-/*
     private fun setupObservers() {
-        // This method is commented out because it was causing a build failure.
-        // It referenced a 'logcatMessages' LiveData that was incorrectly added and then removed from the MainViewModel.
-        // viewModel.logcatMessages.observe(viewLifecycleOwner) { logs ->
-            // logcatAdapter.logs.clear()
-            // logcatAdapter.logs.addAll(logs)
-            // logcatAdapter.notifyDataSetChanged()
-            // binding.logcatRecyclerview.scrollToPosition(logs.size - 1)
-        // }
+        viewModel.diagnosticLogs.observe(viewLifecycleOwner) { logs ->
+            logcatAdapter.submitList(logs.toList()) // submitList needs a new list to calculate diff
+            if (logs.isNotEmpty()) {
+                binding.logcatRecyclerview.scrollToPosition(0) // Scroll to the top to see the newest log
+            }
+        }
     }
-*/
 
     override fun onDestroyView() {
         super.onDestroyView()
