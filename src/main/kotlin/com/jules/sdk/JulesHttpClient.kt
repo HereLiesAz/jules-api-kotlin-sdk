@@ -58,7 +58,7 @@ class JulesHttpClient(
             }
             install(Logging) {
                 logger = Logger.DEFAULT
-                level = LogLevel.ALL
+                level = LogLevel.NONE
             }
             install(HttpRequestRetry) {
                 retryOnServerErrors(retryConfig.maxRetries)
