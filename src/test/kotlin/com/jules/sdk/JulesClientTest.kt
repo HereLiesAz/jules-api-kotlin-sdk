@@ -1,75 +1,107 @@
 package com.jules.sdk
 
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.mockk
+import io.ktor.client.*
+import io.ktor.client.engine.mock.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.BeforeEach
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class JulesClientTest {
 
-    private lateinit var mockHttpClient: JulesHttpClient
-    private lateinit var julesClient: JulesClient
+    private val json = Json {
+        ignoreUnknownKeys = true
+        prettyPrint = true
+    }
 
-    @BeforeEach
-    fun setUp() {
-        mockHttpClient = mockk(relaxed = true)
-        julesClient = JulesClient(mockHttpClient)
+    private fun createMockClient(mockResponses: Map<String, String>): JulesClient {
+        val mockEngine = MockEngine { request ->
+            val responseContent = mockResponses[request.url.encodedPath] ?: ""
+            respond(
+                content = responseContent,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val httpClient = HttpClient(mockEngine) {
+            install(ContentNegotiation) {
+                json(json)
+            }
+        }
+        return JulesClient(JulesHttpClient(apiKey = "test-key", httpClient = httpClient))
     }
 
     @Test
-    fun `listSources calls http client get`() = runBlocking {
-        julesClient.listSources()
-        coVerify { mockHttpClient.get<ListSourcesResponse>("/sources", any()) }
+    fun `listSources returns sources`() = runBlocking {
+        val mockResponse = ListSourcesResponse(sources = listOf(Source("name", "id", "now", "now", "url", "type")))
+        val client = createMockClient(mapOf("/sources" to json.encodeToString(mockResponse)))
+        val response = client.listSources()
+        assertEquals(mockResponse, response)
     }
 
     @Test
-    fun `getSource calls http client get`() = runBlocking {
-        julesClient.getSource("test-id")
-        coVerify { mockHttpClient.get<Source>("/sources/test-id") }
+    fun `getSource returns source`() = runBlocking {
+        val mockResponse = Source("name", "id", "now", "now", "url", "type")
+        val client = createMockClient(mapOf("/sources/test-id" to json.encodeToString(mockResponse)))
+        val response = client.getSource("test-id")
+        assertEquals(mockResponse, response)
     }
 
     @Test
-    fun `createSession calls http client post`() = runBlocking {
-        val request = mockk<CreateSessionRequest>()
-        julesClient.createSession(request)
-        coVerify { mockHttpClient.post<Session>("/sessions", request) }
+    fun `createSession returns session`() = runBlocking {
+        val mockResponse = Session("name", "id", "now", "now", SessionState.STATE_UNSPECIFIED, "url", "prompt", SourceContext("source"))
+        val client = createMockClient(mapOf("/sessions" to json.encodeToString(mockResponse)))
+        val response = client.createSession(CreateSessionRequest("prompt", SourceContext("source")))
+        assertEquals(mockResponse, response)
     }
 
     @Test
-    fun `listSessions calls http client get`() = runBlocking {
-        julesClient.listSessions()
-        coVerify { mockHttpClient.get<ListSessionsResponse>("/sessions", any()) }
+    fun `listSessions returns sessions`() = runBlocking {
+        val mockResponse = ListSessionsResponse(sessions = listOf(Session("name", "id", "now", "now", SessionState.STATE_UNSPECIFIED, "url", "prompt", SourceContext("source"))))
+        val client = createMockClient(mapOf("/sessions" to json.encodeToString(mockResponse)))
+        val response = client.listSessions()
+        assertEquals(mockResponse, response)
     }
 
     @Test
-    fun `getSession calls http client get`() = runBlocking {
-        julesClient.getSession("test-id")
-        coVerify { mockHttpClient.get<Session>("/sessions/test-id") }
+    fun `getSession returns session`() = runBlocking {
+        val mockResponse = Session("name", "id", "now", "now", SessionState.STATE_UNSPECIFIED, "url", "prompt", SourceContext("source"))
+        val client = createMockClient(mapOf("/sessions/test-id" to json.encodeToString(mockResponse)))
+        val response = client.getSession("test-id")
+        assertEquals(mockResponse, response)
     }
 
     @Test
-    fun `approvePlan calls http client post`() = runBlocking {
-        julesClient.approvePlan("test-id")
-        coVerify { mockHttpClient.post<Unit>("/sessions/test-id:approvePlan") }
+    fun `approvePlan works`() = runBlocking {
+        val client = createMockClient(mapOf("/sessions/test-id:approvePlan" to "{}"))
+        client.approvePlan("test-id")
     }
 
     @Test
-    fun `listActivities calls http client get`() = runBlocking {
-        julesClient.listActivities("test-id")
-        coVerify { mockHttpClient.get<ListActivitiesResponse>("/sessions/test-id/activities", any()) }
+    fun `listActivities returns activities`() = runBlocking {
+        val mockResponse = ListActivitiesResponse(activities = listOf(Activity("id", "name", "desc", "now", "now", "prompt", "state")))
+        val client = createMockClient(mapOf("/sessions/test-id/activities" to json.encodeToString(mockResponse)))
+        val response = client.listActivities("test-id")
+        assertEquals(mockResponse, response)
     }
 
     @Test
-    fun `getActivity calls http client get`() = runBlocking {
-        julesClient.getActivity("session-id", "activity-id")
-        coVerify { mockHttpClient.get<Activity>("/sessions/session-id/activities/activity-id") }
+    fun `getActivity returns activity`() = runBlocking {
+        val mockResponse = Activity("id", "name", "desc", "now", "now", "prompt", "state")
+        val client = createMockClient(mapOf("/sessions/session-id/activities/activity-id" to json.encodeToString(mockResponse)))
+        val response = client.getActivity("session-id", "activity-id")
+        assertEquals(mockResponse, response)
     }
 
     @Test
-    fun `sendMessage calls http client post`() = runBlocking {
-        julesClient.sendMessage("test-id", "prompt")
-        coVerify { mockHttpClient.post<MessageResponse>("/sessions/test-id:sendMessage", any()) }
+    fun `sendMessage returns message`() = runBlocking {
+        val mockResponse = MessageResponse("message")
+        val client = createMockClient(mapOf("/sessions/test-id:sendMessage" to json.encodeToString(mockResponse)))
+        val response = client.sendMessage("test-id", "prompt")
+        assertEquals(mockResponse, response)
     }
 }
