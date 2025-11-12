@@ -3,9 +3,11 @@ package com.hereliesaz.julesapisdk.testapp
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
@@ -19,6 +21,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -82,6 +85,7 @@ class MainActivity : AppCompatActivity() {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
         sharedPreferences.edit().putString("api_key", apiKey).apply()
+        showChat()
     }
 
     private fun loadApiKey() {
@@ -97,6 +101,21 @@ class MainActivity : AppCompatActivity() {
         if (!apiKey.isNullOrBlank()) {
             binding.apiKeyEdittext.setText(apiKey)
             viewModel.setApiKey(apiKey)
+            showChat()
+        } else {
+            showApiKeyEntry()
         }
+    }
+
+    private fun showApiKeyEntry() {
+        binding.apiKeyEntryLayout.visibility = View.VISIBLE
+        binding.messagesRecyclerview.visibility = View.GONE
+        binding.messageInputLayout.visibility = View.GONE
+    }
+
+    private fun showChat() {
+        binding.apiKeyEntryLayout.visibility = View.GONE
+        binding.messagesRecyclerview.visibility = View.VISIBLE
+        binding.messageInputLayout.visibility = View.VISIBLE
     }
 }
