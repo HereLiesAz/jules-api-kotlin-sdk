@@ -21,7 +21,10 @@ class JulesClientTest {
     private fun createMockClient(mockResponses: Map<String, String>): JulesClient {
         val mockEngine = MockEngine { request ->
             // The request path includes the api version, so we need to strip it
-            val path = request.url.encodedPath.removePrefix("/v1alpha")
+            var path = request.url.encodedPath.removePrefix("/v1alpha")
+            if (path.startsWith("/sessions/")) {
+                path = path.replaceFirst("/sessions/", "/")
+            }
             val responseContent = mockResponses[path] ?: ""
             respond(
                 content = responseContent,
@@ -80,7 +83,7 @@ class JulesClientTest {
         val mockGetResponse = readResource("/getSession.json")
         client = createMockClient(mapOf(
             "/sessions" to mockCreateResponse,
-            "/sessions/test-id" to mockGetResponse
+            "/test-id" to mockGetResponse
         ))
         val request = CreateSessionRequest(
             prompt = "Test prompt",
@@ -113,8 +116,8 @@ class JulesClientTest {
     @Test
     fun `getSession returns session`() = runBlocking {
         val mockResponse = readResource("/getSession.json")
-        client = createMockClient(mapOf("/sessions/test-id" to mockResponse))
-        val response = client.getSession("test-id")
+        client = createMockClient(mapOf("/test-id" to mockResponse))
+        val response = client.getSession("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Session>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -122,16 +125,16 @@ class JulesClientTest {
 
     @Test
     fun `approvePlan works`() = runBlocking {
-        client = createMockClient(mapOf("/sessions/test-id:approvePlan" to "{}"))
-        val response = client.approvePlan("test-id")
+        client = createMockClient(mapOf("/test-id:approvePlan" to "{}"))
+        val response = client.approvePlan("sessions/test-id")
         assertTrue(response is SdkResult.Success)
     }
 
     @Test
     fun `listActivities returns activities`() = runBlocking {
         val mockResponse = readResource("/listActivities.json")
-        client = createMockClient(mapOf("/sessions/test-id/activities" to mockResponse))
-        val response = client.listActivities("test-id")
+        client = createMockClient(mapOf("/test-id/activities" to mockResponse))
+        val response = client.listActivities("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<ListActivitiesResponse>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -140,8 +143,8 @@ class JulesClientTest {
     @Test
     fun `getActivity returns activity`() = runBlocking {
         val mockResponse = readResource("/getActivity.json")
-        client = createMockClient(mapOf("/sessions/session-id/activities/activity-id" to mockResponse))
-        val response = client.getActivity("session-id", "activity-id")
+        client = createMockClient(mapOf("/test-id/activities/activity-id" to mockResponse))
+        val response = client.getActivity("sessions/test-id", "activity-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Activity>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -150,8 +153,8 @@ class JulesClientTest {
     @Test
     fun `sendMessage returns message`() = runBlocking {
         val mockResponse = readResource("/sendMessage_response.json")
-        client = createMockClient(mapOf("/sessions/test-id:sendMessage" to mockResponse))
-        val response = client.sendMessage("test-id", "prompt")
+        client = createMockClient(mapOf("/test-id:sendMessage" to mockResponse))
+        val response = client.sendMessage("sessions/test-id", "prompt")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<MessageResponse>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -193,7 +196,7 @@ class JulesClientTest {
         val mockGetResponse = readResource("/getSession_response_queued.json")
         client = createMockClient(mapOf(
             "/sessions" to mockCreateResponse,
-            "/sessions/abc-123" to mockGetResponse
+            "/abc-123" to mockGetResponse
         ))
         val request = json.decodeFromString<CreateSessionRequest>(readResource("/createSession_request_minimal.json"))
         val response = client.createSession(request)
@@ -208,7 +211,7 @@ class JulesClientTest {
         val mockGetResponse = readResource("/getSession_response_queued.json")
         client = createMockClient(mapOf(
             "/sessions" to mockCreateResponse,
-            "/sessions/abc-123" to mockGetResponse
+            "/abc-123" to mockGetResponse
         ))
         val request = json.decodeFromString<CreateSessionRequest>(readResource("/createSession_request_maximal.json"))
         val response = client.createSession(request)
@@ -220,8 +223,8 @@ class JulesClientTest {
     @Test
     fun `getSession returns queued session`() = runBlocking {
         val mockResponse = readResource("/getSession_response_queued.json")
-        client = createMockClient(mapOf("/sessions/test-id" to mockResponse))
-        val response = client.getSession("test-id")
+        client = createMockClient(mapOf("/test-id" to mockResponse))
+        val response = client.getSession("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Session>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -230,8 +233,8 @@ class JulesClientTest {
     @Test
     fun `getSession returns awaiting approval session`() = runBlocking {
         val mockResponse = readResource("/getSession_response_awaiting_approval.json")
-        client = createMockClient(mapOf("/sessions/test-id" to mockResponse))
-        val response = client.getSession("test-id")
+        client = createMockClient(mapOf("/test-id" to mockResponse))
+        val response = client.getSession("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Session>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -240,8 +243,8 @@ class JulesClientTest {
     @Test
     fun `getSession returns completed with output session`() = runBlocking {
         val mockResponse = readResource("/getSession_response_completed_with_output.json")
-        client = createMockClient(mapOf("/sessions/test-id" to mockResponse))
-        val response = client.getSession("test-id")
+        client = createMockClient(mapOf("/test-id" to mockResponse))
+        val response = client.getSession("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Session>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -250,8 +253,8 @@ class JulesClientTest {
     @Test
     fun `getSession returns failed session`() = runBlocking {
         val mockResponse = readResource("/getSession_response_failed.json")
-        client = createMockClient(mapOf("/sessions/test-id" to mockResponse))
-        val response = client.getSession("test-id")
+        client = createMockClient(mapOf("/test-id" to mockResponse))
+        val response = client.getSession("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Session>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -290,16 +293,16 @@ class JulesClientTest {
     @Test
     fun `approvePlan returns success`() = runBlocking {
         val mockResponse = readResource("/approvePlan_response.json")
-        client = createMockClient(mapOf("/sessions/test-id:approvePlan" to mockResponse))
-        val response = client.approvePlan("test-id")
+        client = createMockClient(mapOf("/test-id:approvePlan" to mockResponse))
+        val response = client.approvePlan("sessions/test-id")
         assertTrue(response is SdkResult.Success)
     }
 
     @Test
     fun `listActivities returns empty list`() = runBlocking {
         val mockResponse = readResource("/listActivities_response_empty.json")
-        client = createMockClient(mapOf("/sessions/test-id/activities" to mockResponse))
-        val response = client.listActivities("test-id")
+        client = createMockClient(mapOf("/test-id/activities" to mockResponse))
+        val response = client.listActivities("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<ListActivitiesResponse>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
@@ -308,8 +311,8 @@ class JulesClientTest {
     @Test
     fun `listActivities returns paginated list`() = runBlocking {
         val mockResponse = readResource("/listActivities_response_paginated.json")
-        client = createMockClient(mapOf("/sessions/test-id/activities" to mockResponse))
-        val response = client.listActivities("test-id")
+        client = createMockClient(mapOf("/test-id/activities" to mockResponse))
+        val response = client.listActivities("sessions/test-id")
         assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<ListActivitiesResponse>(mockResponse)
         assertEquals(expected, (response as SdkResult.Success).data)
