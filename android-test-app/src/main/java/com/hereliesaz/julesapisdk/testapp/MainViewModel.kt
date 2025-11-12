@@ -10,6 +10,8 @@ import com.hereliesaz.julesapisdk.JulesSession
 import com.hereliesaz.julesapisdk.SdkResult
 import com.hereliesaz.julesapisdk.Source
 import com.hereliesaz.julesapisdk.SourceContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -35,6 +37,8 @@ class MainViewModel : ViewModel() {
 
     private var julesClient: JulesClient? = null
     private var julesSession: JulesSession? = null
+    private var activityPollingJob: Job? = null
+    private var lastSeenActivityId: String? = null
 
     fun addLog(log: String) {
         val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())
@@ -115,6 +119,7 @@ class MainViewModel : ViewModel() {
                     } else {
                         addLog("Session created with source: ${source.name} (URL not available)")
                     }
+                    startActivityPolling(julesSession!!.session.id)
                 }
                 is SdkResult.Error -> {
                     val errorMsg = "API Error creating session: ${result.code} - ${result.body}"
@@ -173,5 +178,66 @@ class MainViewModel : ViewModel() {
         val newMessages = _messages.value.toMutableList()
         newMessages.add(message)
         _messages.value = newMessages
+    }
+
+    private fun startActivityPolling(sessionId: String) {
+        stopActivityPolling() // Ensure no multiple polls are running
+        activityPollingJob = viewModelScope.launch {
+            while (true) {
+                when (val result = julesClient?.listActivities(sessionId)) {
+                    is SdkResult.Success -> {
+                        val activities = result.data.activities
+                        if (!activities.isNullOrEmpty()) {
+                            val newActivities = if (lastSeenActivityId == null) {
+                                activities
+                            } else {
+                                val lastIndex = activities.indexOfFirst { it.id == lastSeenActivityId }
+                                if (lastIndex != -1 && lastIndex < activities.lastIndex) {
+                                    activities.subList(lastIndex + 1, activities.size)
+                                } else {
+                                    emptyList()
+                                }
+                            }
+
+                            newActivities.forEach { activity ->
+                                val activityMessage = Message("Activity: ${activity.description}", MessageType.BOT)
+                                addMessage(activityMessage)
+                                lastSeenActivityId = activity.id
+                            }
+                        }
+                    }
+                    is SdkResult.Error -> {
+                        val errorMsg = "Error polling activities: ${result.code} - ${result.body}"
+                        addLog(errorMsg)
+                        addMessage(Message(errorMsg, MessageType.ERROR))
+                        stopActivityPolling()
+                    }
+                    is SdkResult.NetworkError -> {
+                        val sw = StringWriter()
+                        result.throwable.printStackTrace(PrintWriter(sw))
+                        val errorMsg = "Network error polling activities:$sw"
+                        addLog(errorMsg)
+                        addMessage(Message(errorMsg, MessageType.ERROR))
+                        stopActivityPolling()
+                    }
+                    null -> {
+                        addLog("Error: JulesClient is not initialized.")
+                        stopActivityPolling()
+                    }
+                }
+                delay(5000) // Poll every 5 seconds
+            }
+        }
+    }
+
+    private fun stopActivityPolling() {
+        activityPollingJob?.cancel()
+        activityPollingJob = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopActivityPolling()
+        julesClient?.close()
     }
 }

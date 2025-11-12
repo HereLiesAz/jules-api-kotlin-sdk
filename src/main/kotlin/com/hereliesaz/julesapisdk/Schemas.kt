@@ -636,5 +636,5 @@ class ApprovePlanRequest
  */
 @Serializable
 data class MessageResponse(
-    val message: String
+    val message: String? = null
 )
