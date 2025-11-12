@@ -66,7 +66,7 @@ publishing {
                     developer {
                         id.set("hereliesaz")
                         name.set("Jules")
-                        email.set("jules@example.com")
+                        email.set("hereliesaz@gmail.com")
                     }
                 }
                 scm {

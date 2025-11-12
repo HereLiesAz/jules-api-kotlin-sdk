@@ -16,12 +16,12 @@ Add the following dependency to your `build.gradle.kts` or `build.gradle` file:
 
 **Gradle (Kotlin DSL)**
 ```kotlin
-implementation("com.jules:jules-sdk:1.0.1")
+implementation("com.hereliesaz.julesapisdk:kotlin-sdk:1.0.1")
 ```
 
 **Gradle (Groovy DSL)**
 ```groovy
-implementation 'com.jules:jules-sdk:1.0.1'
+implementation 'com.hereliesaz.julesapisdk:kotlin-sdk:1.0.1'
 ```
 
 ## Quick Start
@@ -29,10 +29,10 @@ implementation 'com.jules:jules-sdk:1.0.1'
 The SDK is designed to be used with Kotlin Coroutines.
 
 ```kotlin
-import com.jules.sdk.JulesClient
-import com.jules.sdk.CreateSessionRequest
-import com.jules.sdk.SourceContext
-import com.jules.sdk.GithubRepoContext
+import com.hereliesaz.julesapisdk.JulesClient
+import com.hereliesaz.julesapisdk.CreateSessionRequest
+import com.hereliesaz.julesapisdk.SourceContext
+import com.hereliesaz.julesapisdk.GithubRepoContext
 import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
@@ -162,14 +162,18 @@ val client = JulesClient(
 
 ### Error Recovery
 
-All API methods can throw exceptions (e.g., `ClientRequestException` for 4xx/5xx responses). Always wrap API calls in `try-catch` blocks.
+All API methods can throw exceptions (e.g., `JulesApiException` for 4xx/5xx responses). Always wrap API calls in `try-catch` blocks.
 
 ```kotlin
+import com.hereliesaz.julesapisdk.JulesApiException
+
 try {
     val session = client.createSession(request)
     println("Success: ${session.id}")
-} catch (e: Exception) {
+} catch (e: JulesApiException) {
     println("Error: ${e.message}")
+    println("HTTP Status: ${e.statusCode}")
+    println("Response Body: ${e.responseBody}")
 }
 ```
 

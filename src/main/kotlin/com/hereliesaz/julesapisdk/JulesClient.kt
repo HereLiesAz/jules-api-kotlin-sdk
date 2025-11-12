@@ -95,7 +95,7 @@ class JulesClient(
      * @param sessionId The ID of the session.
      */
     suspend fun approvePlan(sessionId: String) {
-        httpClient.post<Unit>("/sessions/$sessionId:approvePlan")
+        httpClient.post<Unit>("/sessions/$sessionId:approvePlan", emptyMap<String, String>())
     }
 
     /**
@@ -133,7 +133,8 @@ class JulesClient(
      */
     suspend fun sendMessage(sessionId: String, prompt: String): MessageResponse {
         require(prompt.isNotBlank()) { "Prompt must be a non-empty string" }
-        return httpClient.post<MessageResponse>("/sessions/$sessionId:sendMessage", mapOf("prompt" to prompt))
+        val request = SendMessageRequest(prompt)
+        return httpClient.post<MessageResponse>("/sessions/$sessionId:sendMessage", request)
     }
 
     override fun close() {
