@@ -46,9 +46,9 @@ kotlin {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "com.hereliesaz.julesapisdk"
+            groupId = group.toString()
             artifactId = "kotlin-sdk"
-            version = "1.0.1"
+            version = version.toString()
 
             from(components["java"])
 
