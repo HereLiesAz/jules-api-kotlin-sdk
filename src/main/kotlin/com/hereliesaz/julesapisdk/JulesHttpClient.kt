@@ -2,7 +2,7 @@ package com.hereliesaz.julesapisdk
 
 import io.ktor.client.*
 import io.ktor.client.call.body
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
@@ -20,8 +20,9 @@ import java.io.Closeable
  * @property initialDelayMs The initial delay in milliseconds before the first retry.
  */
 data class RetryConfig(
-    val maxRetries: Int = 0,
-    val initialDelayMs: Long = 1000
+    val maxRetries: Int = 3,
+    val initialDelayMs: Long = 1000,
+    val maxDelayMs: Long = 15000
 )
 
 /**
@@ -49,9 +50,13 @@ class JulesHttpClient(
     private val ownClient: Boolean = httpClient == null
 
     init {
-        val baseClient = httpClient ?: HttpClient(CIO) {
+        val baseClient = httpClient ?: HttpClient(OkHttp) {
             engine {
-                requestTimeout = timeout
+                config {
+                    connectTimeout(timeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+                    readTimeout(timeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+                    writeTimeout(timeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+                }
             }
             install(ContentNegotiation) {
                 json(Json {
@@ -65,7 +70,11 @@ class JulesHttpClient(
             }
             install(HttpRequestRetry) {
                 maxRetries = retryConfig.maxRetries
-                exponentialDelay(retryConfig.initialDelayMs.toDouble())
+                delayMillis { retry ->
+                    val delay = (retryConfig.initialDelayMs * Math.pow(2.0, retry.toDouble())).toLong()
+                    val randomJitter = (0..1000).random()
+                    minOf(delay + randomJitter, retryConfig.maxDelayMs)
+                }
                 retryIf { _, response ->
                     response.status.value.let { it in setOf(408, 429, 500, 502, 503, 504) }
                 }
