@@ -8,7 +8,8 @@ import com.hereliesaz.julesapisdk.CreateSessionRequest
 import com.hereliesaz.julesapisdk.JulesClient
 import com.hereliesaz.julesapisdk.JulesSession
 import com.hereliesaz.julesapisdk.SdkResult
-import com.hereliesaz.julesapisdk.SourceInfo
+import com.hereliesaz.julesapisdk.Session
+import com.hereliesaz.julesapisdk.Source
 import com.hereliesaz.julesapisdk.SourceContext
 import kotlinx.coroutines.launch
 import java.io.PrintWriter
@@ -24,8 +25,8 @@ class MainViewModel : ViewModel() {
     val messages: LiveData<List<Message>> = _messages
 
     // For Settings tab
-    private val _sources = MutableLiveData<List<SourceInfo>>()
-    val sources: LiveData<List<SourceInfo>> = _sources
+    private val _sources = MutableLiveData<List<Source>>()
+    val sources: LiveData<List<Source>> = _sources
 
     // For Logcat tab - SINGLE SOURCE OF TRUTH FOR ALL LOGS/ERRORS
     private val _diagnosticLogs = MutableLiveData<List<String>>(emptyList())
@@ -83,7 +84,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun createSession(source: SourceInfo) {
+    fun createSession(source: Source) {
         if (julesClient == null) {
             addLog("Error: API Key is not set. Cannot create session.")
             return

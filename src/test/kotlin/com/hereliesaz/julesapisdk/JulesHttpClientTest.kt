@@ -8,8 +8,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 class JulesHttpClientTest {
     private fun createMockClient(mockEngine: MockEngine): JulesHttpClient {
@@ -35,7 +35,8 @@ class JulesHttpClientTest {
         }
         val client = createMockClient(mockEngine)
         val response = client.get<Map<String, String>>("/test")
-        assertEquals(mapOf("key" to "value"), response)
+        assertTrue(response is SdkResult.Success)
+        assertEquals(mapOf("key" to "value"), (response as SdkResult.Success).data)
     }
 
     @Test
@@ -48,11 +49,10 @@ class JulesHttpClientTest {
             )
         }
         val client = createMockClient(mockEngine)
-        val exception = assertFailsWith<JulesApiException> {
-            client.get<Map<String, String>>("/test")
-        }
-        assertEquals(404, exception.statusCode)
-        assertEquals("""{"error":"not found"}""", exception.responseBody)
+        val response = client.get<Map<String, String>>("/test")
+        assertTrue(response is SdkResult.Error)
+        assertEquals(404, (response as SdkResult.Error).code)
+        assertEquals("""{"error":"not found"}""", response.body)
     }
 
     @Test
@@ -66,7 +66,8 @@ class JulesHttpClientTest {
         }
         val client = createMockClient(mockEngine)
         val response = client.post<Map<String, String>>("/test", mapOf("key" to "value"))
-        assertEquals(mapOf("status" to "created"), response)
+        assertTrue(response is SdkResult.Success)
+        assertEquals(mapOf("status" to "created"), (response as SdkResult.Success).data)
     }
 
     @Test
@@ -79,6 +80,7 @@ class JulesHttpClientTest {
             )
         }
         val client = createMockClient(mockEngine)
-        client.post<Unit>("/test")
+        val response = client.post<Unit>("/test")
+        assertTrue(response is SdkResult.Success)
     }
 }

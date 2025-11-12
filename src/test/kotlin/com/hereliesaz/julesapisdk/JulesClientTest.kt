@@ -7,8 +7,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class JulesClientTest {
@@ -44,11 +43,25 @@ class JulesClientTest {
 
     @Test
     fun `listSources returns sources`() = runBlocking {
+        val mockResponse = readResource("/listSources.json")
+        client = createMockClient(mapOf("/sources" to mockResponse))
+        val response = client.listSources()
+        assertTrue(response is SdkResult.Success)
+        val expected = json.decodeFromString<ListSourcesResponse>(mockResponse)
+        assertEquals(expected, (response as SdkResult.Success).data)
+    }
+
+    @Test
+    fun `listSources with correct data returns sources`() = runBlocking {
         val mockResponse = readResource("/listSources_correct.json")
         client = createMockClient(mapOf("/sources" to mockResponse))
         val response = client.listSources()
-        val expected = json.decodeFromString<ListSourcesResponse>(mockResponse)
-        assertEquals(expected, response)
+        assertTrue(response is SdkResult.Success)
+        val data = (response as SdkResult.Success).data
+        assertNotNull(data.sources)
+        assertTrue(data.sources?.isNotEmpty() == true)
+        val source = data.sources?.get(0)
+        assertTrue(source is Source.GithubSource)
     }
 
     @Test
@@ -56,8 +69,9 @@ class JulesClientTest {
         val mockResponse = readResource("/getSource.json")
         client = createMockClient(mapOf("/sources/test-id" to mockResponse))
         val response = client.getSource("test-id")
+        assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Source>(mockResponse)
-        assertEquals(expected, response)
+        assertEquals(expected, (response as SdkResult.Success).data)
     }
 
     @Test
@@ -77,10 +91,9 @@ class JulesClientTest {
             automationMode = AutomationMode.AUTO_CREATE_PR
         )
         val response = client.createSession(request)
+        assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Session>(mockResponse)
-        println("Expected: $expected")
-        println("Actual: $response")
-        assertEquals(expected, response)
+        assertEquals(expected, (response as SdkResult.Success).data.session)
     }
 
     @Test
@@ -88,8 +101,9 @@ class JulesClientTest {
         val mockResponse = readResource("/listSessions.json")
         client = createMockClient(mapOf("/sessions" to mockResponse))
         val response = client.listSessions()
+        assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<ListSessionsResponse>(mockResponse)
-        assertEquals(expected, response)
+        assertEquals(expected, (response as SdkResult.Success).data)
     }
 
     @Test
@@ -97,14 +111,16 @@ class JulesClientTest {
         val mockResponse = readResource("/getSession.json")
         client = createMockClient(mapOf("/sessions/test-id" to mockResponse))
         val response = client.getSession("test-id")
+        assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Session>(mockResponse)
-        assertEquals(expected, response)
+        assertEquals(expected, (response as SdkResult.Success).data)
     }
 
     @Test
     fun `approvePlan works`() = runBlocking {
         client = createMockClient(mapOf("/sessions/test-id:approvePlan" to "{}"))
-        client.approvePlan("test-id")
+        val response = client.approvePlan("test-id")
+        assertTrue(response is SdkResult.Success)
     }
 
     @Test
@@ -112,8 +128,9 @@ class JulesClientTest {
         val mockResponse = readResource("/listActivities.json")
         client = createMockClient(mapOf("/sessions/test-id/activities" to mockResponse))
         val response = client.listActivities("test-id")
+        assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<ListActivitiesResponse>(mockResponse)
-        assertEquals(expected, response)
+        assertEquals(expected, (response as SdkResult.Success).data)
     }
 
     @Test
@@ -121,8 +138,9 @@ class JulesClientTest {
         val mockResponse = readResource("/getActivity.json")
         client = createMockClient(mapOf("/sessions/session-id/activities/activity-id" to mockResponse))
         val response = client.getActivity("session-id", "activity-id")
+        assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<Activity>(mockResponse)
-        assertEquals(expected, response)
+        assertEquals(expected, (response as SdkResult.Success).data)
     }
 
     @Test
@@ -130,7 +148,8 @@ class JulesClientTest {
         val mockResponse = readResource("/sendMessage.json")
         client = createMockClient(mapOf("/sessions/test-id:sendMessage" to mockResponse))
         val response = client.sendMessage("test-id", "prompt")
+        assertTrue(response is SdkResult.Success)
         val expected = json.decodeFromString<MessageResponse>(mockResponse)
-        assertEquals(expected, response)
+        assertEquals(expected, (response as SdkResult.Success).data)
     }
 }

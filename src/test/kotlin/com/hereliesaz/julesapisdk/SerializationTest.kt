@@ -3,6 +3,7 @@ package com.hereliesaz.julesapisdk
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SerializationTest {
@@ -25,8 +26,8 @@ class SerializationTest {
             }
         """.trimIndent()
         val activity = json.decodeFromString<Activity>(activityJson)
-        assertNotNull(activity.agentMessaged)
-        assertEquals("Hello from the agent", activity.agentMessaged?.agentMessage)
+        assertTrue(activity is Activity.AgentMessagedActivity)
+        assertEquals("Hello from the agent", (activity as Activity.AgentMessagedActivity).agentMessaged.agentMessage)
     }
 
     @Test
@@ -51,8 +52,8 @@ class SerializationTest {
             }
         """.trimIndent()
         val activity = json.decodeFromString<Activity>(activityJson)
-        assertNotNull(activity.planGenerated)
-        assertEquals(2, activity.planGenerated?.plan?.steps?.size)
+        assertTrue(activity is Activity.PlanGeneratedActivity)
+        assertEquals(2, (activity as Activity.PlanGeneratedActivity).planGenerated.plan.steps?.size)
     }
 
     @Test
@@ -68,7 +69,7 @@ class SerializationTest {
             }
         """.trimIndent()
         val artifact = json.decodeFromString<Artifact>(artifactJson)
-        assertNotNull(artifact.changeSet)
-        assertEquals("file.kt", artifact.changeSet?.source)
+        assertTrue(artifact is Artifact.ChangeSetArtifact)
+        assertEquals("file.kt", (artifact as Artifact.ChangeSetArtifact).changeSet.source)
     }
 }

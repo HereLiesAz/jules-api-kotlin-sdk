@@ -2,19 +2,34 @@ package com.hereliesaz.julesapisdk
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonContentPolymorphicSerializer
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
 
 // ================================================================================================
 // GitHub / Source Schemas
 // ================================================================================================
 
 /**
- * Represents the context of a GitHub repository.
+ * Represents the context of a GitHub repository when creating a session.
  *
  * @property startingBranch The starting branch of the repository.
  */
 @Serializable
 data class GithubRepoContext(
-    val startingBranch: String? = null
+    val startingBranch: String
+)
+
+/**
+ * Represents a GitHub repository as returned by the `listSources` endpoint.
+ *
+ * @property owner The owner of the repository.
+ * @property repo The name of the repository.
+ */
+@Serializable
+data class GithubRepo(
+    val owner: String,
+    val repo: String
 )
 
 /**
@@ -164,11 +179,11 @@ data class GitPatch(
 )
 
 /**
- * Represents a change set artifact.
- *
- * @property source The source the change set applies to.
- * @property gitPatch The Git patch details.
- */
+* Represents a change set artifact.
+*
+* @property source The source the change set applies to.
+* @property gitPatch The Git patch details.
+*/
 @Serializable
 data class ChangeSet(
     val source: String,
@@ -204,22 +219,27 @@ data class BashOutput(
 /**
  * An artifact produced by an activity.
  * This uses the "optional fields" pattern. Only one of the fields will be present.
- *
- * @property changeSet A code change set.
- * @property media A media file.
- * @property bashOutput The output of a bash command.
  */
-@Serializable
-data class Artifact(
-    // Original (incorrect) fields - a "type" string is not what the API returns
-    // val type: String,
-    // val content: String
+@Serializable(with = ArtifactSerializer::class)
+sealed interface Artifact {
+    @Serializable
+    data class ChangeSetArtifact(val changeSet: ChangeSet) : Artifact
+    @Serializable
+    data class MediaArtifact(val media: Media) : Artifact
+    @Serializable
+    data class BashOutputArtifact(val bashOutput: BashOutput) : Artifact
+    @Serializable
+    data class UnknownArtifact(val content: JsonElement) : Artifact
+}
 
-    // Corrected (optional fields)
-    val changeSet: ChangeSet? = null,
-    val media: Media? = null,
-    val bashOutput: BashOutput? = null
-)
+object ArtifactSerializer : JsonContentPolymorphicSerializer<Artifact>(Artifact::class) {
+    override fun selectDeserializer(element: JsonElement) = when {
+        "changeSet" in element.jsonObject -> Artifact.ChangeSetArtifact.serializer()
+        "media" in element.jsonObject -> Artifact.MediaArtifact.serializer()
+        "bashOutput" in element.jsonObject -> Artifact.BashOutputArtifact.serializer()
+        else -> Artifact.UnknownArtifact.serializer()
+    }
+}
 
 /**
  * Represents a message from the agent.
@@ -324,46 +344,143 @@ data class SessionFailed(
 /**
  * An activity within a session.
  * This uses the "optional fields" pattern. Only one of the content fields will be present.
- *
- * @property id The unique ID of the activity.
- * @property name The resource name of the activity.
- * @property description An optional description of the activity.
- * @property createTime The time the activity was created.
- * @property updateTime The time the activity was last updated.
- * @property prompt The prompt that triggered the activity (legacy, use userMessaged).
- * @property state The current state of the activity.
- * @property artifacts The artifacts produced by the activity.
- * @property originator The originator of the activity (user or agent).
- *
- * @property agentMessaged Content if the agent sent a message.
- * @property userMessaged Content if the user sent a message.
- * @property planGenerated Content if a plan was generated.
- * @property planApproved Content if a plan was approved.
- * @property progressUpdated Content if progress was updated.
- * @property sessionCompleted Content if the session completed.
- * @property sessionFailed Content if the session failed.
  */
-@Serializable
-data class Activity(
-    val id: String,
-    val name: String,
-    val description: String? = null, // Made optional, as per TS SDK fix
-    val createTime: String,
-    val updateTime: String,
-    val prompt: String, // This is often present but redundant
-    val state: String,
-    val artifacts: List<Artifact>? = null,
-    val originator: String? = null, // 'user' or 'agent'
+@Serializable(with = ActivitySerializer::class)
+sealed interface Activity {
+    val id: String
+    val name: String
+    val description: String?
+    val createTime: String
+    val updateTime: String
+    val prompt: String
+    val state: String
+    val artifacts: List<Artifact>?
+    val originator: String?
 
-    // Content fields (only one will be populated)
-    val agentMessaged: AgentMessaged? = null,
-    val userMessaged: UserMessaged? = null,
-    val planGenerated: PlanGenerated? = null,
-    val planApproved: PlanApproved? = null,
-    val progressUpdated: ProgressUpdated? = null,
-    val sessionCompleted: SessionCompleted? = null,
-    val sessionFailed: SessionFailed? = null
-)
+    @Serializable
+    data class AgentMessagedActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null,
+        val agentMessaged: AgentMessaged
+    ) : Activity
+
+    @Serializable
+    data class UserMessagedActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null,
+        val userMessaged: UserMessaged
+    ) : Activity
+
+    @Serializable
+    data class PlanGeneratedActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null,
+        val planGenerated: PlanGenerated
+    ) : Activity
+
+    @Serializable
+    data class PlanApprovedActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null,
+        val planApproved: PlanApproved
+    ) : Activity
+
+    @Serializable
+    data class ProgressUpdatedActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null,
+        val progressUpdated: ProgressUpdated
+    ) : Activity
+
+    @Serializable
+    data class SessionCompletedActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null,
+        val sessionCompleted: SessionCompleted
+    ) : Activity
+
+    @Serializable
+    data class SessionFailedActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null,
+        val sessionFailed: SessionFailed
+    ) : Activity
+
+    @Serializable
+    data class UnknownActivity(
+        override val id: String,
+        override val name: String,
+        override val description: String? = null,
+        override val createTime: String,
+        override val updateTime: String,
+        override val prompt: String,
+        override val state: String,
+        override val artifacts: List<Artifact>? = null,
+        override val originator: String? = null
+    ) : Activity
+}
+
+object ActivitySerializer : JsonContentPolymorphicSerializer<Activity>(Activity::class) {
+    override fun selectDeserializer(element: JsonElement) = when {
+        "agentMessaged" in element.jsonObject -> Activity.AgentMessagedActivity.serializer()
+        "userMessaged" in element.jsonObject -> Activity.UserMessagedActivity.serializer()
+        "planGenerated" in element.jsonObject -> Activity.PlanGeneratedActivity.serializer()
+        "planApproved" in element.jsonObject -> Activity.PlanApprovedActivity.serializer()
+        "progressUpdated" in element.jsonObject -> Activity.ProgressUpdatedActivity.serializer()
+        "sessionCompleted" in element.jsonObject -> Activity.SessionCompletedActivity.serializer()
+        "sessionFailed" in element.jsonObject -> Activity.SessionFailedActivity.serializer()
+        else -> Activity.UnknownActivity.serializer()
+    }
+}
 
 /**
  * A response containing a list of activities.
@@ -382,79 +499,46 @@ data class ListActivitiesResponse(
 // ================================================================================================
 
 /**
- * A GitHub branch.
- * As returned by the `listSources` endpoint.
- *
- * @property displayName The name of the branch.
- */
-@Serializable
-data class GitHubBranch(
-    val displayName: String
-)
-
-/**
- * A GitHub repository.
- * As returned by the `listSources` endpoint.
- *
- * @property owner The repository owner.
- * @property repo The repository name.
- * @property isPrivate Whether the repository is private.
- * @property defaultBranch The default branch of the repository.
- * @property branches The list of active branches.
- */
-@Serializable
-data class GitHubRepo(
-    val owner: String,
-    val repo: String,
-    val isPrivate: Boolean,
-    val defaultBranch: GitHubBranch,
-    val branches: List<GitHubBranch>
-)
-
-/**
  * A source for the Jules AI.
- *
- * @property name The name of the source.
- * @property id The unique ID of the source.
- * @property createTime The time the source was created.
- * @property updateTime The time the source was last updated.
- * @property url The URL of the source.
- * @property type The type of the source.
- * @property githubRepo The GitHub repo details, if this is a GitHub source.
  */
-/**
- * Represents a source for the Jules AI, as returned by the `listSources` endpoint.
- * This may be a partial representation of the full Source object.
- *
- * @property name The name of the source.
- * @property id The unique ID of the source.
- * @property createTime The time the source was created.
- * @property updateTime The time the source was last updated.
- * @property url The URL of the source.
- * @property type The type of the source.
- * @property githubRepo The GitHub repo details, if this is a GitHub source.
- */
-@Serializable
-data class SourceInfo(
-    val name: String,
-    val id: String,
-    val createTime: String? = null,
-    val updateTime: String? = null,
-    val url: String? = null,
-    val type: String? = null,
-    val githubRepo: GitHubRepo? = null
-)
+@Serializable(with = SourceSerializer::class)
+sealed interface Source {
+    val name: String
+    val id: String
+    val createTime: String
+    val updateTime: String
+    val url: String
+    val type: String
 
-@Serializable
-data class Source(
-    val name: String,
-    val id: String,
-    val createTime: String,
-    val updateTime: String,
-    val url: String,
-    val type: String,
-    val githubRepo: GitHubRepo? = null
-)
+    @Serializable
+    data class GithubSource(
+        override val name: String,
+        override val id: String,
+        override val createTime: String,
+        override val updateTime: String,
+        override val url: String,
+        override val type: String,
+        val githubRepo: GithubRepo
+    ) : Source
+
+    @Serializable
+    data class UnknownSource(
+        override val name: String,
+        override val id: String,
+        override val createTime: String,
+        override val updateTime: String,
+        override val url: String,
+        override val type: String
+    ) : Source
+}
+
+object SourceSerializer : JsonContentPolymorphicSerializer<Source>(Source::class) {
+    override fun selectDeserializer(element: JsonElement) = when {
+        "githubRepo" in element.jsonObject -> Source.GithubSource.serializer()
+        else -> Source.UnknownSource.serializer()
+    }
+}
+
 
 /**
  * A response containing a list of sources.
@@ -464,7 +548,7 @@ data class Source(
  */
 @Serializable
 data class ListSourcesResponse(
-    val sources: List<SourceInfo>? = null,
+    val sources: List<Source>? = null,
     val nextPageToken: String? = null
 )
 
@@ -487,7 +571,7 @@ data class ErrorDetail(
 /**
  * A Google API error.
  *
- * @property code The HTTP status code.
+* @property code The HTTP status code.
  * @property message The error message.
  * @property status The error status.
  * @property details The details of the error.
