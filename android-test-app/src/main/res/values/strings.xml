@@ -2,4 +2,9 @@
 <resources>
     <string name="app_name">Jules SDK Test App</string>
     <string name="call_sdk_button">Call SDK</string>
+    <string name="api_key_hint">Enter your API key</string>
+    <string name="get_api_key_button">Get API key</string>
+    <string name="save_button">Save</string>
+    <string name="prompt_hint">Enter your prompt</string>
+    <string name="send_button">Send</string>
 </resources>
