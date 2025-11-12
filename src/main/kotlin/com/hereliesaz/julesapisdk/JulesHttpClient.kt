@@ -46,7 +46,6 @@ class JulesHttpClient(
     private val httpClient: HttpClient? = null
 ) : Closeable {
     val client: HttpClient
-    val fullUrl: String = "$baseUrl/$apiVersion"
 
     init {
         val baseClient = httpClient ?: HttpClient(CIO) {
@@ -83,6 +82,10 @@ class JulesHttpClient(
         }
     }
 
+    fun buildUrl(endpoint: String): String {
+        return "${baseUrl.removeSuffix("/")}/${apiVersion.removeSuffix("/")}/${endpoint.removePrefix("/")}"
+    }
+
     /**
      * Makes a GET request to the specified endpoint.
      *
@@ -92,7 +95,7 @@ class JulesHttpClient(
      * @return The response body, deserialized to the expected type.
      */
     suspend inline fun <reified T> get(endpoint: String, params: Map<String, String> = emptyMap()): T {
-        val response = client.get(fullUrl + endpoint) {
+        val response = client.get(buildUrl(endpoint)) {
             params.forEach { (key, value) ->
                 parameter(key, value)
             }
@@ -112,7 +115,7 @@ class JulesHttpClient(
      * @return The response body, deserialized to the expected type.
      */
     suspend inline fun <reified T> post(endpoint: String, body: Any? = null): T {
-        val response = client.post(fullUrl + endpoint) {
+        val response = client.post(buildUrl(endpoint)) {
             if (body != null) {
                 setBody(body)
             }
