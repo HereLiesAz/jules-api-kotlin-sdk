@@ -21,7 +21,9 @@ class JulesClientTest {
 
     private fun createMockClient(mockResponses: Map<String, String>): JulesClient {
         val mockEngine = MockEngine { request ->
-            val responseContent = mockResponses[request.url.encodedPath] ?: ""
+            // The request path includes the api version, so we need to strip it
+            val path = request.url.encodedPath.removePrefix("/v1alpha")
+            val responseContent = mockResponses[path] ?: ""
             respond(
                 content = responseContent,
                 status = HttpStatusCode.OK,
@@ -33,7 +35,7 @@ class JulesClientTest {
                 json(json)
             }
         }
-        return JulesClient(JulesHttpClient(apiKey = "test-key", httpClient = httpClient))
+        return JulesClient(apiKey = "test-key", ktorClient = httpClient)
     }
 
     private fun readResource(name: String): String {
