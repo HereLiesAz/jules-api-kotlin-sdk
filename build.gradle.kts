@@ -6,7 +6,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.hereliesaz.jules-kotlin-sdk"
+group = "com.hereliesaz.jules-api-sdk"
 version = "1.0.1"
 
 repositories {
@@ -46,8 +46,8 @@ kotlin {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "com.hereliesaz.jules-kotlin-sdk"
-            artifactId = "jules-api-kotlin-sdk"
+            groupId = "com.hereliesaz.jules-api-sdk"
+            artifactId = "kotlin-sdk"
             version = "1.0.1"
 
             from(components["java"])
@@ -55,11 +55,11 @@ publishing {
             pom {
                 name.set("Jules API Kotlin SDK")
                 description.set("A Kotlin SDK for the Jules API.")
-                url.set("https://github.com/hereliesaz/jules-api-kotlin-sdk")
+                url.set("https://github.com/hereliesaz/jules-api-sdk")
                 licenses {
                     license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
                     }
                 }
                 developers {
@@ -70,9 +70,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/hereliesaz/jules-api-kotlin-sdk.git")
-                    developerConnection.set("scm:git:ssh://github.com/hereliesaz/jules-api-kotlin-sdk.git")
-                    url.set("https://github.com/hereliesaz/jules-api-kotlin-sdk/tree/main")
+                    connection.set("scm:git:https://github.com/hereliesaz/jules-api-sdk.git")
+                    developerConnection.set("scm:git:ssh://github.com/hereliesaz/jules-api-sdk.git")
+                    url.set("https://github.com/hereliesaz/jules-api-sdk/tree/main")
                 }
             }
         }
