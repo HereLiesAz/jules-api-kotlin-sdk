@@ -1,46 +1,42 @@
 package com.hereliesaz.julesapisdk.testapp
 
-import android.app.Activity
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.hereliesaz.julesapisdk.JulesClient
+import com.hereliesaz.julesapisdk.testapp.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
 
-    private lateinit var callSdkButton: Button
-    private lateinit var resultTextView: TextView
+    private lateinit var binding: ActivityMainBinding
+
+    private val julesClient by lazy {
+        JulesClient(BuildConfig.API_KEY)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        callSdkButton = findViewById(R.id.call_sdk_button)
-        resultTextView = findViewById(R.id.result_textview)
-
-        callSdkButton.setOnClickListener {
+        binding.callSdkButton.setOnClickListener {
             callSdk()
         }
     }
 
     private fun callSdk() {
-        // Replace with your actual API key
-        val apiKey = "YOUR_API_KEY"
-        val client = JulesClient(apiKey)
-
-        GlobalScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val sources = client.listSources()
+                val sources = julesClient.listSources()
                 withContext(Dispatchers.Main) {
-                    resultTextView.text = sources.toString()
+                    binding.resultTextview.text = sources.toString()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    resultTextView.text = e.message
+                    binding.resultTextview.text = e.message
                 }
             }
         }
