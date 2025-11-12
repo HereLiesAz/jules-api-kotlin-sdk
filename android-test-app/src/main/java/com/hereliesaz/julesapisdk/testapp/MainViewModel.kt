@@ -2,18 +2,12 @@ package com.hereliesaz.julesapisdk.testapp
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hereliesaz.julesapisdk.CreateSessionRequest
-import com.hereliesaz.julesapisdk.GithubRepoSource
-import com.hereliesaz.julesapisdk.GithubRepoContext
-import com.hereliesaz.julesapisdk.JulesClient
-import com.hereliesaz.julesapisdk.JulesSession
-import com.hereliesaz.julesapisdk.SdkResult
-import com.hereliesaz.julesapisdk.Source
-import com.hereliesaz.julesapisdk.SourceContext
+import com.hereliesaz.julesapisdk.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -33,8 +27,8 @@ class MainViewModel : ViewModel() {
 
     private var julesClient: JulesClient? = null
     private var julesSession: JulesSession? = null
-    private var activityPollingJob: Job? = null
-    private var lastSeenActivityId: String? = null
+    private var pollingJob: Job? = null
+    private val _seenActivityIds = mutableSetOf<String>()
 
     fun addLog(log: String) {
         val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())
@@ -114,7 +108,7 @@ class MainViewModel : ViewModel() {
                     } else {
                         addLog("Session created with source: ${source.name} (URL not available)")
                     }
-                    startActivityPolling(julesSession!!.session.id)
+                    startPolling()
                 }
                 is SdkResult.Error -> {
                     val errorMsg = "API Error creating session: ${result.code} - ${result.body}"
@@ -169,6 +163,61 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    private fun startPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (isActive) {
+                val session = julesSession?.session
+                if (session?.state == SessionState.COMPLETED || session?.state == SessionState.FAILED) {
+                    addLog("Session ended with state: ${session.state}. Stopping polling.")
+                    pollingJob?.cancel()
+                    return@launch
+                }
+                pollActivities()
+                delay(5000)
+            }
+        }
+    }
+
+    private suspend fun pollActivities() {
+        if (julesSession == null) return
+        when (val result = julesClient?.listActivities(julesSession!!.session.id)) {
+            is SdkResult.Success<ListActivitiesResponse> -> {
+                val activities = result.data.activities
+                if (activities?.isNotEmpty() == true) {
+                    for (activity in activities) {
+                        if (!_seenActivityIds.contains(activity.id)) {
+                            _seenActivityIds.add(activity.id)
+                            handleActivity(activity)
+                        }
+                    }
+                }
+            }
+            is SdkResult.Error -> {
+                addLog("Error polling activities: ${result.code} - ${result.body}")
+            }
+            is SdkResult.NetworkError -> {
+                val sw = StringWriter()
+                result.throwable.printStackTrace(PrintWriter(sw))
+                addLog("Network error polling activities:$sw")
+            }
+            null -> {
+                addLog("Error: Session is not initialized.")
+            }
+        }
+    }
+
+    private fun handleActivity(activity: Activity) {
+        when (activity) {
+            is Activity.AgentMessagedActivity -> {
+                addMessage(Message(activity.agentMessaged.agentMessage, MessageType.BOT))
+            }
+            else -> {
+                addLog("Unhandled activity type: ${activity::class.java.simpleName}")
+            }
+        }
+    }
+
     private fun addMessage(message: Message) {
         val currentState = _uiState.value
         if (currentState is UiState.Chat) {
@@ -178,66 +227,5 @@ class MainViewModel : ViewModel() {
         } else {
             _uiState.value = UiState.Chat(listOf(message))
         }
-    }
-
-    private fun startActivityPolling(sessionId: String) {
-        stopActivityPolling() // Ensure no multiple polls are running
-        activityPollingJob = viewModelScope.launch {
-            while (true) {
-                when (val result = julesClient?.listActivities(sessionId)) {
-                    is SdkResult.Success -> {
-                        val activities = result.data.activities
-                        if (!activities.isNullOrEmpty()) {
-                            val newActivities = if (lastSeenActivityId == null) {
-                                activities
-                            } else {
-                                val lastIndex = activities.indexOfFirst { it.id == lastSeenActivityId }
-                                if (lastIndex != -1 && lastIndex < activities.lastIndex) {
-                                    activities.subList(lastIndex + 1, activities.size)
-                                } else {
-                                    emptyList()
-                                }
-                            }
-
-                            newActivities.forEach { activity ->
-                                val activityMessage = Message("Activity: ${activity.description}", MessageType.BOT)
-                                addMessage(activityMessage)
-                                lastSeenActivityId = activity.id
-                            }
-                        }
-                    }
-                    is SdkResult.Error -> {
-                        val errorMsg = "Error polling activities: ${result.code} - ${result.body}"
-                        addLog(errorMsg)
-                        addMessage(Message(errorMsg, MessageType.ERROR))
-                        stopActivityPolling()
-                    }
-                    is SdkResult.NetworkError -> {
-                        val sw = StringWriter()
-                        result.throwable.printStackTrace(PrintWriter(sw))
-                        val errorMsg = "Network error polling activities:$sw"
-                        addLog(errorMsg)
-                        addMessage(Message(errorMsg, MessageType.ERROR))
-                        stopActivityPolling()
-                    }
-                    null -> {
-                        addLog("Error: JulesClient is not initialized.")
-                        stopActivityPolling()
-                    }
-                }
-                delay(5000) // Poll every 5 seconds
-            }
-        }
-    }
-
-    private fun stopActivityPolling() {
-        activityPollingJob?.cancel()
-        activityPollingJob = null
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopActivityPolling()
-        julesClient?.close()
     }
 }
