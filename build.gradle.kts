@@ -6,7 +6,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.hereliesaz.jules-api-sdk"
+group = "com.hereliesaz.julesapisdk"
 version = "1.0.1"
 
 repositories {
@@ -46,7 +46,7 @@ kotlin {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "com.hereliesaz.jules-api-sdk"
+            groupId = "com.hereliesaz.julesapisdk"
             artifactId = "kotlin-sdk"
             version = "1.0.1"
 
