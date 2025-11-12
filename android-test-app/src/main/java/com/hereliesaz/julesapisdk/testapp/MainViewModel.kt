@@ -1,10 +1,9 @@
 package com.hereliesaz.julesapisdk.testapp
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hereliesaz.julesapisdk.CreateSessionRequest
+import com.hereliesaz.julesapisdk.GithubRepoSource
 import com.hereliesaz.julesapisdk.JulesClient
 import com.hereliesaz.julesapisdk.JulesSession
 import com.hereliesaz.julesapisdk.SdkResult
@@ -98,15 +97,18 @@ class MainViewModel : ViewModel() {
         }
         addLog("Creating session with source: ${source.name}")
         viewModelScope.launch {
-            _messages.postValue(emptyList()) // Clear chat on new session
+            _messages.value = emptyList() // Clear chat on new session
             when (val result = julesClient?.createSession(CreateSessionRequest("Test Application", SourceContext(source.name)))) {
                 is SdkResult.Success -> {
                     julesSession = result.data
-                    source.url.let {
-                        val successMsg = "Session created with source: $it"
+                    if (source is GithubRepoSource) {
+                        val url = "https://github.com/${source.githubRepo.owner}/${source.githubRepo.repo}"
+                        val successMsg = "Session created with source: $url"
                         addMessage(Message(successMsg, MessageType.BOT))
                         addLog(successMsg)
-                    } ?: addLog("Session created with source: ${source.name} (URL not available)")
+                    } else {
+                        addLog("Session created with source: ${source.name} (URL not available)")
+                    }
                 }
                 is SdkResult.Error -> {
                     val errorMsg = "API Error creating session: ${result.code} - ${result.body}"

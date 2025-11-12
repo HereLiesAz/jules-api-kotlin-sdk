@@ -1,5 +1,6 @@
 package com.hereliesaz.julesapisdk.testapp
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -61,6 +62,7 @@ class SourcesAdapter(
             return oldItem.id == newItem.id
         }
 
+        @SuppressLint("DiffUtilEquals")
         override fun areContentsTheSame(oldItem: Source, newItem: Source): Boolean {
             return oldItem == newItem
         }
