@@ -15,9 +15,6 @@ class MainViewModel : ViewModel() {
     private val _messages = MutableLiveData<List<Message>>(emptyList())
     val messages: LiveData<List<Message>> = _messages
 
-    private val _errorMessage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> = _errorMessage
-
     private var julesClient: JulesClient? = null
     private var julesSession: JulesSession? = null
 
@@ -34,38 +31,34 @@ class MainViewModel : ViewModel() {
             try {
                 julesSession = julesClient?.createSession(CreateSessionRequest("Test Application", SourceContext("Test Application")))
             } catch (e: Exception) {
-                _errorMessage.postValue("Error creating session: ${e.message}")
+                addMessage(Message("Error creating session: ${e.message}", MessageType.ERROR))
             }
         }
     }
 
     fun sendMessage(text: String) {
         if (julesSession == null) {
-            _errorMessage.postValue("Session not created. Please check your API key.")
+            addMessage(Message("Session not created. Please check your API key.", MessageType.ERROR))
             return
         }
 
-        val userMessage = Message(text, true)
-        val newMessages = _messages.value.orEmpty().toMutableList()
-        newMessages.add(userMessage)
-        _messages.postValue(newMessages)
+        addMessage(Message(text, MessageType.USER))
 
         viewModelScope.launch {
             try {
                 val response = julesSession?.sendMessage(text)
                 response?.let {
-                    val botMessage = Message(it.message, false)
-                    val updatedMessages = _messages.value.orEmpty().toMutableList()
-                    updatedMessages.add(botMessage)
-                    _messages.postValue(updatedMessages)
+                    addMessage(Message(it.message, MessageType.BOT))
                 }
             } catch (e: Exception) {
-                _errorMessage.postValue("Error sending message: ${e.message}")
+                addMessage(Message("Error sending message: ${e.message}", MessageType.ERROR))
             }
         }
     }
 
-    fun clearErrorMessage() {
-        _errorMessage.value = null
+    private fun addMessage(message: Message) {
+        val newMessages = _messages.value.orEmpty().toMutableList()
+        newMessages.add(message)
+        _messages.postValue(newMessages)
     }
 }
