@@ -7,9 +7,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.hereliesaz.julesapisdk.Source
@@ -21,8 +21,7 @@ class SettingsFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: MainViewModel by activityViewModels()
 
-    private lateinit var sourceAdapter: ArrayAdapter<String>
-    private var sourcesList = listOf<Source>()
+    private lateinit var sourcesAdapter: SourcesAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,17 +34,21 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupSpinner()
+        setupRecyclerView()
         setupClickListeners()
         setupObservers()
 
         loadSettings()
     }
 
-    private fun setupSpinner() {
-        sourceAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, mutableListOf())
-        sourceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.sourceSpinner.adapter = sourceAdapter
+    private fun setupRecyclerView() {
+        sourcesAdapter = SourcesAdapter { source ->
+            // Optional: Handle source selection directly, e.g., for immediate feedback
+        }
+        binding.sourcesRecyclerView.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = sourcesAdapter
+        }
     }
 
     private fun setupClickListeners() {
@@ -54,18 +57,28 @@ class SettingsFragment : Fragment() {
             startActivity(intent)
         }
 
-        binding.loadSourcesButton.setOnClickListener {
-            val apiKey = binding.apiKeyEdittext.text.toString()
-            viewModel.initializeClient(apiKey)
-            viewModel.loadSources()
-            // Switch to logcat tab to see the outcome
-            (requireActivity() as? MainActivity)?.binding?.viewPager?.currentItem = 2
-        }
+        binding.apiKeyEdittext.addTextChangedListener(object : android.text.TextWatcher {
+            private var searchFor: String = ""
+            private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+            private val runnable = Runnable {
+                val apiKey = searchFor
+                if (apiKey.isNotBlank()) {
+                    viewModel.initializeClient(apiKey)
+                    viewModel.loadSources()
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchFor = s.toString()
+                handler.removeCallbacks(runnable)
+                handler.postDelayed(runnable, 500) // 500ms debounce
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
 
         binding.saveApiKeyButton.setOnClickListener {
-            val selectedPosition = binding.sourceSpinner.selectedItemPosition
-            if (selectedPosition >= 0 && sourcesList.isNotEmpty() && selectedPosition < sourcesList.size) {
-                val selectedSource = sourcesList[selectedPosition]
+            val selectedSource = sourcesAdapter.getSelectedSource()
+            if (selectedSource != null) {
                 val apiKey = binding.apiKeyEdittext.text.toString()
 
                 viewModel.addLog("Settings saved. Requesting session creation...")
@@ -83,18 +96,10 @@ class SettingsFragment : Fragment() {
 
     private fun setupObservers() {
         viewModel.sources.observe(viewLifecycleOwner) { sources ->
-            sourcesList = sources
-            val sourceDisplayNames = sources.map { it.url } // Display the user-friendly URL
-            sourceAdapter.clear()
-            sourceAdapter.addAll(sourceDisplayNames)
-            sourceAdapter.notifyDataSetChanged()
-
+            sourcesAdapter.setSources(sources)
             val savedSourceName = getEncryptedSharedPreferences().getString("selected_source_name", null)
             if (savedSourceName != null) {
-                val position = sourcesList.indexOfFirst { it.name == savedSourceName }
-                if (position != -1) {
-                    binding.sourceSpinner.setSelection(position)
-                }
+                sourcesAdapter.setSelectedSource(savedSourceName)
             }
         }
     }

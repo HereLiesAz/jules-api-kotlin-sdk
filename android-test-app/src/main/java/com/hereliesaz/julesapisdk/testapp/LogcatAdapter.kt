@@ -12,7 +12,7 @@ class LogcatAdapter : ListAdapter<String, LogcatAdapter.LogViewHolder>(LogDiffCa
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LogViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(android.R.layout.simple_list_item_1, parent, false)
+            .inflate(R.layout.logcat_item, parent, false)
         return LogViewHolder(view)
     }
 
