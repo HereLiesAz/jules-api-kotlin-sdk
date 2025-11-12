@@ -1,6 +1,7 @@
 # Jules AI Kotlin SDK
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![](https://jitpack.io/v/HereLiesAz/julesapisdk.svg)](https://jitpack.io/#HereLiesAz/julesapisdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![](https://jitpack.io/v/HereLiesAz/julesapisdk.svg)](https://jitpack.io/#HereLiesAz/julesapisdk)   [![](https://jitpack.io/v/HereLiesAz/julesapisdk.svg)](https://jitpack.io/#HereLiesAz/julesapisdk)
+
 
 > **Note:** This is an **unofficial** community SDK for the Jules AI API. It is not affiliated with, officially maintained by, or endorsed by Google.
 
@@ -16,12 +17,7 @@ Add the following dependency to your `build.gradle.kts` or `build.gradle` file:
 
 **Gradle (Kotlin DSL)**
 ```kotlin
-implementation("com.hereliesaz.julesapisdk:kotlin-sdk:1.0.1")
-```
-
-**Gradle (Groovy DSL)**
-```groovy
-implementation 'com.hereliesaz.julesapisdk:kotlin-sdk:1.0.1'
+implementation("com.hereliesaz.julesapisdk:kotlin-sdk:1.0.2")
 ```
 
 ## Quick Start
