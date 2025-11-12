@@ -1,6 +1,6 @@
 # Jules AI Kotlin SDK
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![](https://jitpack.io/v/HereLiesAz/julesapisdk.svg)](https://jitpack.io/#HereLiesAz/julesapisdk)
 
 > **Note:** This is an **unofficial** community SDK for the Jules AI API. It is not affiliated with, officially maintained by, or endorsed by Google.
 
