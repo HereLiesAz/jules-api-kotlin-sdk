@@ -4,7 +4,7 @@
 
 > **Note:** This is an **unofficial** community SDK for the Jules AI API. It is not affiliated with, officially maintained by, or endorsed by Google.
 
-A fully-typed Kotlin SDK for the [Jules AI API](https://developers.google.com/jules/api), built with Ktor and Kotlinx Serialization. [Jules](https://jules.google.com) is a Google product that provides AI-powered coding assistance.
+A Kotlin SDK for the [Jules AI API](https://developers.google.com/jules/api), built with Ktor and Kotlinx Serialization. [Jules](https://jules.google.com) is a Google product that provides AI-powered coding assistance.
 
 This SDK provides a simple, asynchronous, and type-safe way to interact with all Jules API endpoints from any Kotlin application.
 
