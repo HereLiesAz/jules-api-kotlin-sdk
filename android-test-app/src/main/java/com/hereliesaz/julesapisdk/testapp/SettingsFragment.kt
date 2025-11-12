@@ -83,6 +83,7 @@ class SettingsFragment : Fragment() {
             if (selectedSource != null) {
                 val apiKey = binding.apiKeyEdittext.text.toString()
 
+                viewModel.initializeClient(apiKey)
                 viewModel.addLog("Settings saved. Requesting session creation...")
                 viewModel.createSession(selectedSource)
                 saveSettings(apiKey, selectedSource.name)
