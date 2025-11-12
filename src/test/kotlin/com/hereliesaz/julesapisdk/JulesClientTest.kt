@@ -76,8 +76,12 @@ class JulesClientTest {
 
     @Test
     fun `createSession returns session`() = runBlocking {
-        val mockResponse = readResource("/createSession.json")
-        client = createMockClient(mapOf("/sessions" to mockResponse))
+        val mockCreateResponse = readResource("/createSession.json")
+        val mockGetResponse = readResource("/getSession.json")
+        client = createMockClient(mapOf(
+            "/sessions" to mockCreateResponse,
+            "/sessions/test-id" to mockGetResponse
+        ))
         val request = CreateSessionRequest(
             prompt = "Test prompt",
             sourceContext = SourceContext(
@@ -92,7 +96,7 @@ class JulesClientTest {
         )
         val response = client.createSession(request)
         assertTrue(response is SdkResult.Success)
-        val expected = json.decodeFromString<Session>(mockResponse)
+        val expected = json.decodeFromString<Session>(mockGetResponse)
         assertEquals(expected, (response as SdkResult.Success).data.session)
     }
 

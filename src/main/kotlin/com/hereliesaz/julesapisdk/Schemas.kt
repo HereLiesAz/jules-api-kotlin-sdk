@@ -134,14 +134,15 @@ data class SessionOutput(
  */
 @Serializable
 data class Session(
+    // The create endpoint returns a partial session, so most fields are nullable.
     val name: String,
     val id: String,
-    val createTime: String,
-    val updateTime: String,
-    val state: SessionState,
-    val url: String,
-    val prompt: String,
-    val sourceContext: SourceContext,
+    val createTime: String? = null,
+    val updateTime: String? = null,
+    val state: SessionState? = null,
+    val url: String? = null,
+    val prompt: String? = null,
+    val sourceContext: SourceContext? = null,
     val title: String? = null,
     val requirePlanApproval: Boolean? = null,
     val automationMode: AutomationMode? = null,

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hereliesaz.julesapisdk.CreateSessionRequest
 import com.hereliesaz.julesapisdk.GithubRepoSource
+import com.hereliesaz.julesapisdk.GithubRepoContext
 import com.hereliesaz.julesapisdk.JulesClient
 import com.hereliesaz.julesapisdk.JulesSession
 import com.hereliesaz.julesapisdk.SdkResult
@@ -98,7 +99,12 @@ class MainViewModel : ViewModel() {
         addLog("Creating session with source: ${source.name}")
         viewModelScope.launch {
             _messages.value = emptyList() // Clear chat on new session
-            when (val result = julesClient?.createSession(CreateSessionRequest("Test Application", SourceContext(source.name)))) {
+            val sourceContext = if (source is GithubRepoSource) {
+                SourceContext(source.name, GithubRepoContext("main"))
+            } else {
+                SourceContext(source.name)
+            }
+            when (val result = julesClient?.createSession(CreateSessionRequest("Test Application", sourceContext))) {
                 is SdkResult.Success -> {
                     julesSession = result.data
                     if (source is GithubRepoSource) {

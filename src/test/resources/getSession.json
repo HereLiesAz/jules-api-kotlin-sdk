@@ -1,12 +1,19 @@
 {
-  "name": "name",
-  "id": "id",
-  "createTime": "now",
-  "updateTime": "now",
-  "state": "STATE_UNSPECIFIED",
-  "url": "url",
-  "prompt": "prompt",
+  "name": "sessions/test-id",
+  "id": "test-id",
+  "createTime": "2025-11-12T00:00:00Z",
+  "updateTime": "2025-11-12T00:00:00Z",
+  "state": "QUEUED",
+  "url": "https://jules.google.com/sessions/test-id",
+  "prompt": "Test prompt",
   "sourceContext": {
-    "source": "source"
-  }
+    "source": "sources/github/test-owner/test-repo",
+    "githubRepoContext": {
+      "startingBranch": "main"
+    }
+  },
+  "title": "Test Session",
+  "requirePlanApproval": false,
+  "automationMode": "AUTO_CREATE_PR",
+  "outputs": []
 }
