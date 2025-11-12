@@ -2,12 +2,16 @@ package com.hereliesaz.julesapisdk.testapp
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hereliesaz.julesapisdk.*
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import com.hereliesaz.julesapisdk.CreateSessionRequest
+import com.hereliesaz.julesapisdk.GithubRepoSource
+import com.hereliesaz.julesapisdk.GithubRepoContext
+import com.hereliesaz.julesapisdk.JulesClient
+import com.hereliesaz.julesapisdk.JulesSession
+import com.hereliesaz.julesapisdk.SdkResult
+import com.hereliesaz.julesapisdk.Source
+import com.hereliesaz.julesapisdk.SourceContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -21,14 +25,16 @@ class MainViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState
 
+    // For Chat tab
+    private val _messages = MutableStateFlow<List<Message>>(emptyList())
+    val messages: StateFlow<List<Message>> = _messages
+
     // For Logcat tab
     private val _diagnosticLogs = MutableStateFlow<List<String>>(emptyList())
     val diagnosticLogs: StateFlow<List<String>> = _diagnosticLogs
 
     private var julesClient: JulesClient? = null
     private var julesSession: JulesSession? = null
-    private var pollingJob: Job? = null
-    private val _seenActivityIds = mutableSetOf<String>()
 
     fun addLog(log: String) {
         val timestamp = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())
@@ -92,6 +98,7 @@ class MainViewModel : ViewModel() {
         }
         addLog("Creating session with source: ${source.name}")
         viewModelScope.launch {
+            _messages.value = emptyList() // Clear chat on new session
             val sourceContext = if (source is GithubRepoSource) {
                 SourceContext(source.name, GithubRepoContext("main"))
             } else {
@@ -108,7 +115,6 @@ class MainViewModel : ViewModel() {
                     } else {
                         addLog("Session created with source: ${source.name} (URL not available)")
                     }
-                    startPolling()
                 }
                 is SdkResult.Error -> {
                     val errorMsg = "API Error creating session: ${result.code} - ${result.body}"
@@ -163,69 +169,9 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private fun startPolling() {
-        pollingJob?.cancel()
-        pollingJob = viewModelScope.launch {
-            while (isActive) {
-                val session = julesSession?.session
-                if (session?.state == SessionState.COMPLETED || session?.state == SessionState.FAILED) {
-                    addLog("Session ended with state: ${session.state}. Stopping polling.")
-                    pollingJob?.cancel()
-                    return@launch
-                }
-                pollActivities()
-                delay(5000)
-            }
-        }
-    }
-
-    private suspend fun pollActivities() {
-        if (julesSession == null) return
-        when (val result = julesClient?.listActivities(julesSession!!.session.id)) {
-            is SdkResult.Success<ListActivitiesResponse> -> {
-                val activities = result.data.activities
-                if (activities?.isNotEmpty() == true) {
-                    for (activity in activities) {
-                        if (!_seenActivityIds.contains(activity.id)) {
-                            _seenActivityIds.add(activity.id)
-                            handleActivity(activity)
-                        }
-                    }
-                }
-            }
-            is SdkResult.Error -> {
-                addLog("Error polling activities: ${result.code} - ${result.body}")
-            }
-            is SdkResult.NetworkError -> {
-                val sw = StringWriter()
-                result.throwable.printStackTrace(PrintWriter(sw))
-                addLog("Network error polling activities:$sw")
-            }
-            null -> {
-                addLog("Error: Session is not initialized.")
-            }
-        }
-    }
-
-    private fun handleActivity(activity: Activity) {
-        when (activity) {
-            is Activity.AgentMessagedActivity -> {
-                addMessage(Message(activity.agentMessaged.agentMessage, MessageType.BOT))
-            }
-            else -> {
-                addLog("Unhandled activity type: ${activity::class.java.simpleName}")
-            }
-        }
-    }
-
     private fun addMessage(message: Message) {
-        val currentState = _uiState.value
-        if (currentState is UiState.Chat) {
-            val newMessages = currentState.messages.toMutableList()
-            newMessages.add(message)
-            _uiState.value = UiState.Chat(newMessages)
-        } else {
-            _uiState.value = UiState.Chat(listOf(message))
-        }
+        val newMessages = _messages.value.toMutableList()
+        newMessages.add(message)
+        _messages.value = newMessages
     }
 }
