@@ -1,5 +1,6 @@
 package com.jules.sdk
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 // ================================================================================================
@@ -426,7 +427,7 @@ data class ListSourcesResponse(
  */
 @Serializable
 data class ErrorDetail(
-    val type: String, // Original TS schema shows "@type"
+    @SerialName("@type") val type: String,
     val message: String
 )
 

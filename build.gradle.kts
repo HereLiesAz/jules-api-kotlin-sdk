@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.9.20"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
+    `maven-publish`
 }
 
 group = "com.jules"
@@ -40,4 +41,16 @@ tasks.test {
 
 kotlin {
     jvmToolchain(11)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.hereliesaz.jules-kotlin-sdk"
+            artifactId = "jules-api-kotlin-sdk"
+            version = "1.0.1"
+
+            from(components["java"])
+        }
+    }
 }
