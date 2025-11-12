@@ -5,6 +5,6 @@ class JulesSession(
     val session: Session
 ) {
     suspend fun sendMessage(prompt: String): SdkResult<MessageResponse> {
-        return client.sendMessage(session.id, prompt)
+        return client.sendMessage(session.name, prompt)
     }
 }
