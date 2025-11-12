@@ -1,4 +1,4 @@
-package com.jules.sdk
+package com.hereliesaz.julesapisdk
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

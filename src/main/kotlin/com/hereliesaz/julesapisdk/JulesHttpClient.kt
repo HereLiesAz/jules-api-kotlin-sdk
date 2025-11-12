@@ -1,4 +1,4 @@
-package com.jules.sdk
+package com.hereliesaz.julesapisdk
 
 import io.ktor.client.*
 import io.ktor.client.call.body
