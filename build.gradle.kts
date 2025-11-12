@@ -1,17 +1,12 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    kotlin("jvm") version "1.9.20"
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
+    id("org.jetbrains.kotlin.jvm")
+    id("org.jetbrains.kotlin.plugin.serialization")
     `maven-publish`
 }
 
 group = "com.hereliesaz.julesapisdk"
 version = "1.0.1"
 
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     // Ktor client
@@ -40,7 +35,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(11)
+    jvmToolchain(17)
 }
 
 publishing {
