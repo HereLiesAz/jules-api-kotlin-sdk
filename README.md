@@ -8,7 +8,7 @@ A fully-typed Kotlin SDK for the [Jules AI API](https://developers.google.com/ju
 
 This SDK provides a simple, asynchronous, and type-safe way to interact with all Jules API endpoints from any Kotlin application.
 
-**SDK Version:** 1.0.0 (implementing Jules API v1alpha, last updated 2025-11-10 UTC)
+**SDK Version:** 1.0.1 (implementing Jules API v1alpha, last updated 2025-11-10 UTC)
 
 ## Installation
 
@@ -16,12 +16,12 @@ Add the following dependency to your `build.gradle.kts` or `build.gradle` file:
 
 **Gradle (Kotlin DSL)**
 ```kotlin
-implementation("com.jules:jules-sdk:1.0.0")
+implementation("com.jules:jules-sdk:1.0.1")
 ```
 
 **Gradle (Groovy DSL)**
 ```groovy
-implementation 'com.jules:jules-sdk:1.0.0'
+implementation 'com.jules:jules-sdk:1.0.1'
 ```
 
 ## Quick Start
