@@ -61,10 +61,11 @@ class JulesClient(
      * Creates a new session.
      *
      * @param request The request object for creating a session.
-     * @return The created `Session` object.
+     * @return The created `JulesSession` object.
      */
-    suspend fun createSession(request: CreateSessionRequest): Session {
-        return httpClient.post<Session>("/sessions", request)
+    suspend fun createSession(request: CreateSessionRequest): JulesSession {
+        val session = httpClient.post<Session>("/sessions", request)
+        return JulesSession(this, session)
     }
 
     /**

@@ -448,16 +448,6 @@ data class GoogleApiError(
 )
 
 /**
- * The response from sending a message.
- *
- * @property message A confirmation message.
- */
-@Serializable
-data class MessageResponse(
-    val message: String
-)
-
-/**
  * A request to send a message.
  *
  * @property prompt The prompt to send.
@@ -472,3 +462,13 @@ data class SendMessageRequest(
  */
 @Serializable
 class ApprovePlanRequest
+
+/**
+ * The response from sending a message.
+ *
+ * @property message A confirmation message.
+ */
+@Serializable
+data class MessageResponse(
+    val message: String
+)

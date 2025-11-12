@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Jules SDK Test App</string>
-    <string name="call_sdk_button">Call SDK</string>
+    <string name="api_key_hint">Enter your API key</string>
+    <string name="save_button">Save</string>
+    <string name="message_hint">Enter a message</string>
+    <string name="send_button">Send</string>
+    <string name="get_api_key_button">Get API Key</string>
 </resources>
